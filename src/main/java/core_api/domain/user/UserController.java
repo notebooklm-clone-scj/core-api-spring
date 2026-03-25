@@ -19,4 +19,10 @@ public class UserController {
         Long userId = userService.signup(request);
         return ResponseEntity.ok("회원가입 성공! 생성된 유저 ID: " + userId);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody UserLoginRequest request) {
+        String token = userService.login(request);
+        return ResponseEntity.ok(token);
+    }
 }

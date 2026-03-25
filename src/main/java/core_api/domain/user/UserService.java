@@ -1,5 +1,6 @@
 package core_api.domain.user;
 
+import core_api.global.jwt.JwtProvider;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final JwtProvider  jwtProvider;
 
     @Transactional
     public Long signup(UserSignupRequest request) {
@@ -27,5 +29,17 @@ public class UserService {
 
         // 3. DB에 저장 후, 자동 생성된 ID값 반환
         return userRepository.save(newUser).getId();
+    }
+
+    @Transactional
+    public String login(UserLoginRequest request) {
+        User user = userRepository.findByEmail((request.getEmail()))
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+
+        if (!user.getPassword().equals(request.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 틀렸습니다.");
+        }
+
+        return jwtProvider.createToken(user.getId());
     }
 }
