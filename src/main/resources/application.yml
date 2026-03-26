@@ -20,3 +20,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+jwt:
+  # 이 키는 외부로 유출되면 안 됩니다! (최소 32바이트 이상 길이의 임의 문자열)
+  secret: notebooklm-clone-project-chanjin-secret-key-very-long-string
+  expiration: 86400000 # 토큰 유효시간 (하루 = 24시간 * 60분 * 60초 * 1000밀리초)
