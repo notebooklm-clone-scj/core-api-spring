@@ -26,12 +26,15 @@ public class NotebookController {
         return ResponseEntity.ok(responses);
     }
 
-    @PostMapping("/analyze")
-    public ResponseEntity<AiSummaryResponse> analyzePdf(@RequestParam("file") MultipartFile file) {
-        // 넘어온 PDF 파일을 Service에 전달
-        AiSummaryResponse response = notebookService.analyzePdf(file);
+    @PostMapping("/{notebookId}/documents")
+    public ResponseEntity<AiSummaryResponse> uploadDocument(
+            @PathVariable("notebookId") Long notebookId,
+            @RequestParam("file") MultipartFile file) {
 
-        // 2. 파이썬 서버에서 무사히 받아온 요약 결과를 포스트맨에 띄워줍니다!
+        // 넘어온 PDF 파일을 Service에 전달
+        AiSummaryResponse response = notebookService.uploadAndSummarizeDocument(notebookId, file);
+
+        // 파이썬 서버에서 받아온 요약 결과 리턴
         return ResponseEntity.ok(response);
     }
 }
