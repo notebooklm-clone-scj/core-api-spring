@@ -37,4 +37,12 @@ public class NotebookController {
         // 파이썬 서버에서 받아온 요약 결과 리턴
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{notebookId}/documents")
+    public ResponseEntity<List<DocumentResponse>> getDocuments(
+            @PathVariable("notebookId") Long notebookId) {
+
+        List<DocumentResponse> responses = notebookService.getDocumentsByNotebook(notebookId);
+        return ResponseEntity.ok(responses);
+    }
 }
