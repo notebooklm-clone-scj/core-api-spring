@@ -75,4 +75,20 @@ public class NotebookService {
             throw new RuntimeException("PDF AI 분석 중 통신 에러가 발생했습니다.", e);
         }
     }
+
+    public List<DocumentResponse> getDocumentsByNotebook(Long notebookId) {
+
+        // 노트북이 있는지 확인
+        if (!notebookRepository.existsById(notebookId)) {
+            throw new IllegalArgumentException("해당 노트북을 찾을 수 없습니다.");
+        }
+
+        // 해당 노트북의 문서를 조회
+        List<Document> documents = documentRepository.findAllByNotebookId(notebookId);
+
+        // Entity -> DTO, Map으로 반환
+        return documents.stream()
+                .map(DocumentResponse::from)
+                .collect(Collectors.toList());
+    }
 }
