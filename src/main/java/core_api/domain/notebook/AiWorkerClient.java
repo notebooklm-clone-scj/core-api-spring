@@ -1,6 +1,5 @@
 package core_api.domain.notebook;
 
-import core_api.domain.dto.AiChatResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;

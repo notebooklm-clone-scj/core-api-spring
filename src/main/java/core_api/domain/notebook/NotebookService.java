@@ -1,11 +1,8 @@
 package core_api.domain.notebook;
 
-import core_api.domain.dto.AiChatRequest;
-import core_api.domain.dto.AiChatResponse;
 import core_api.domain.user.User;
 import core_api.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -77,6 +74,7 @@ public class NotebookService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<DocumentResponse> getDocumentsByNotebook(Long notebookId) {
         // 노트북이 있는지 확인
         if (!notebookRepository.existsById(notebookId)) {

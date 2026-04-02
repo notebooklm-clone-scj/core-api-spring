@@ -1,4 +1,4 @@
-package core_api.domain.dto;
+package core_api.domain.notebook;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
