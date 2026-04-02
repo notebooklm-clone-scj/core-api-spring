@@ -16,7 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class AiWorkerClient {
@@ -59,19 +61,27 @@ public class AiWorkerClient {
         return response.getBody();
     }
 
-    public AiChatResponse askQuestion(String question) {
+    public AiChatResponse askQuestionWithHistory(String question, List<ChatHistory> historyList) {
         String endpoint = aiWorkerUrl + "/api/v1/chat/";
 
         // JSON 형태로 보낼 헤더 설정
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // 바디에 질문(question) 저장
-        Map<String, String> body = new HashMap<>();
+        // Spring의 ChatHistory 객체들을 파이썬이 읽기 편한 간단한 Map 구조로 변환
+        List<Map<String, String>> formattedHistory = historyList.stream().map(h -> {
+            Map<String, String> map = new HashMap<>();
+            map.put("role", h.getRole());
+            map.put("message", h.getMessage());
+            return map;
+        }).collect(Collectors.toList());
+
+        // Body에 내용물(question, history) 저장
+        Map<String, Object> body = new HashMap<>();
         body.put("question", question);
+        body.put("history", formattedHistory);
 
-        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(body, headers);
-
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         return restTemplate.postForObject(endpoint, requestEntity, AiChatResponse.class);
     }
 
