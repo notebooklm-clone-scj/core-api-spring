@@ -45,4 +45,13 @@ public class NotebookController {
         List<DocumentResponse> responses = notebookService.getDocumentsByNotebook(notebookId);
         return ResponseEntity.ok(responses);
     }
+
+    @PostMapping("/{notebookId}/chat")
+    public ResponseEntity<AiChatResponse> chat(
+            @PathVariable("notebookId") Long notebookId,
+            @RequestBody AiChatRequest request) {
+
+        AiChatResponse response = notebookService.chatWithNotebook(notebookId, request);
+        return ResponseEntity.ok(response);
+    }
 }

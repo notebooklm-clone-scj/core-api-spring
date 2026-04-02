@@ -13,6 +13,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class AiWorkerClient {
@@ -53,7 +55,22 @@ public class AiWorkerClient {
 
         // 파이썬이 준 요약 결과물 반환
         return response.getBody();
+    }
 
+    public AiChatResponse askQuestion(String question) {
+        String endpoint = aiWorkerUrl + "/api/v1/chat/";
+
+        // JSON 형태로 보낼 헤더 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 바디에 질문(question) 저장
+        Map<String, String> body = new HashMap<>();
+        body.put("question", question);
+
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(body, headers);
+
+        return restTemplate.postForObject(endpoint, requestEntity, AiChatResponse.class);
     }
 
 }

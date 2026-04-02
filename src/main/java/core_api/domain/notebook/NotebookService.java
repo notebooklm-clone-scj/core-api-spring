@@ -3,7 +3,6 @@ package core_api.domain.notebook;
 import core_api.domain.user.User;
 import core_api.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,8 +33,7 @@ public class NotebookService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotebookResponse> getNotebooks(Long userId)
-    {
+    public List<NotebookResponse> getNotebooks(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다"));
 
@@ -76,8 +74,8 @@ public class NotebookService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<DocumentResponse> getDocumentsByNotebook(Long notebookId) {
-
         // 노트북이 있는지 확인
         if (!notebookRepository.existsById(notebookId)) {
             throw new IllegalArgumentException("해당 노트북을 찾을 수 없습니다.");
@@ -90,5 +88,17 @@ public class NotebookService {
         return documents.stream()
                 .map(DocumentResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
+        // 노트북 존재 유무 확인
+        if (!notebookRepository.existsById(notebookId)) {
+            throw new IllegalArgumentException("해당 노트북을 찾을 수 없습니다.");
+        }
+
+        // 파이썬 서버에 질문 후 결과 반환
+        // 추후 채팅 내역 DB 저장 로직 추가할 예정
+        return aiWorkerClient.askQuestion(request.getQuestion());
     }
 }
