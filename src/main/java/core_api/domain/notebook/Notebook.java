@@ -1,5 +1,6 @@
 package core_api.domain.notebook;
 
+import core_api.domain.document.Document;
 import core_api.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

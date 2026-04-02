@@ -1,5 +1,11 @@
 package core_api.domain.notebook;
 
+import core_api.domain.chat.dto.AiChatRequest;
+import core_api.domain.chat.dto.AiChatResponse;
+import core_api.domain.document.dto.AiSummaryResponse;
+import core_api.domain.document.dto.DocumentResponse;
+import core_api.domain.notebook.dto.NotebookCreateRequest;
+import core_api.domain.notebook.dto.NotebookResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
