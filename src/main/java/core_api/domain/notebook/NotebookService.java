@@ -19,7 +19,6 @@ public class NotebookService {
 
     private final NotebookRepository notebookRepository;
     private final UserRepository userRepository;
-    private final DocumentRepository documentRepository;
 
     @Transactional
     public Long createNotebook(NotebookCreateRequest request) {
@@ -43,8 +42,5 @@ public class NotebookService {
                 .map(NotebookResponse::from)
                 .collect(Collectors.toList());
     }
-
-    private final AiWorkerClient aiWorkerClient;
-
 
 }
