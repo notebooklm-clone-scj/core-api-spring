@@ -2,10 +2,13 @@ package core_api.domain.chat;
 
 import core_api.domain.chat.dto.AiChatRequest;
 import core_api.domain.chat.dto.AiChatResponse;
+import core_api.domain.notebook.Notebook;
 import core_api.domain.notebook.NotebookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -13,16 +16,36 @@ public class ChatService {
 
     private final NotebookRepository notebookRepository;
     private final AiWorkerClient aiWorkerClient;
+    private final ChatHistoryRepository chatHistoryRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
         // 노트북 존재 유무 확인
-        if (!notebookRepository.existsById(notebookId)) {
-            throw new IllegalArgumentException("해당 노트북을 찾을 수 없습니다.");
-        }
+        Notebook notebook = notebookRepository.findById(notebookId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 노트북을 찾을 수 없습니다."));
 
-        // 파이썬 서버에 질문 후 결과 반환
-        // 추후 채팅 내역 DB 저장 로직 추가할 예정
-        return aiWorkerClient.askQuestion(request.getQuestion());
+        // 유저의 질문을 DB에 저장 (역할: USER)
+        ChatHistory userChat = ChatHistory.builder()
+                .notebook(notebook)
+                .role("USER")
+                .message(request.getQuestion())
+                .build();
+        chatHistoryRepository.save(userChat);
+
+        // 이 방의 모든 과거 대화 내역 꺼내오기 (방금 저장한 내 질문 포함!)
+        List<ChatHistory> historyList = chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId);
+
+        // 파이썬에게 '질문' + '과거 대화 내역'을 같이 전송
+        AiChatResponse response = aiWorkerClient.askQuestionWithHistory(request.getQuestion(), historyList);
+
+        // 파이썬이 만들어준 AI의 답변을 DB에 저장 (역할: AI)
+        ChatHistory aiChat = ChatHistory.builder()
+                .notebook(notebook)
+                .role("AI")
+                .message(response.getAnswer())
+                .build();
+        chatHistoryRepository.save(aiChat);
+
+        return response;
     }
 }
