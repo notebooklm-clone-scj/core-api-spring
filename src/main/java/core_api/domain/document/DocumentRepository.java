@@ -1,4 +1,4 @@
-package core_api.domain.notebook;
+package core_api.domain.document;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

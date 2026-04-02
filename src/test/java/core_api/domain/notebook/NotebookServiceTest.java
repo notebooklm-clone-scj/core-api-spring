@@ -1,12 +1,12 @@
 package core_api.domain.notebook;
 
+import core_api.domain.notebook.dto.NotebookCreateRequest;
+import core_api.domain.notebook.dto.NotebookResponse;
 import core_api.domain.user.User;
 import core_api.domain.user.UserRepository;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
