@@ -1,5 +1,7 @@
 package core_api.domain.notebook;
 
+import core_api.domain.dto.AiChatRequest;
+import core_api.domain.dto.AiChatResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,5 +46,14 @@ public class NotebookController {
 
         List<DocumentResponse> responses = notebookService.getDocumentsByNotebook(notebookId);
         return ResponseEntity.ok(responses);
+    }
+
+    @PostMapping("/{notebookId}/chat")
+    public ResponseEntity<AiChatResponse> chat(
+            @PathVariable("notebookId") Long notebookId,
+            @RequestBody AiChatRequest request) {
+
+        AiChatResponse response = notebookService.chatWithNotebook(notebookId, request);
+        return ResponseEntity.ok(response);
     }
 }
