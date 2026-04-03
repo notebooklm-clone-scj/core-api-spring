@@ -26,6 +26,7 @@ public class DocumentService {
     private final DocumentAsyncWorker documentAsyncWorker;
 
     // 사용자 요청을 받고 즉시 응답 (비동기 입구)
+    @Transactional
     public Long uploadAndSummarizeDocumentAsync(Long notebookId, MultipartFile file) {
         // 노트북 존재 확인
         Notebook notebook = notebookRepository.findById(notebookId)
@@ -40,7 +41,7 @@ public class DocumentService {
             Document newDocument = Document.builder()
                     .notebook(notebook)
                     .filename(originalFilename)
-                    .status("PROCESSING")
+                    .status(DocumentStatus.PROCESSING)
                     .build();
 
             Document savedDoc = documentRepository.save(newDocument);
