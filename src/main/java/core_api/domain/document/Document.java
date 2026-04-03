@@ -33,17 +33,35 @@ public class Document {
     private int totalPages; // 총 페이지 수
     private int fullTextLength; // 추출된 텍스트 길이
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DocumentStatus status; //문서 분석 상태(PROCESSING, COMPLETED, FAILED)
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    public Document(Notebook notebook, String filename, String summary, int totalPages, int fullTextLength) {
+    public Document(Notebook notebook, String filename, String summary, int totalPages, int fullTextLength, DocumentStatus status) {
         this.notebook = notebook;
         this.filename = filename;
         this.summary = summary;
         this.totalPages = totalPages;
         this.fullTextLength = fullTextLength;
+        this.status = (status != null) ? status : DocumentStatus.PROCESSING;
+    }
+
+    // 분석 성공 시 호출
+    public void completeAnalysis(String summary, int totalPages, int fullTextLength) {
+        this.summary = summary;
+        this.totalPages = totalPages;
+        this.fullTextLength = fullTextLength;
+        this.status = DocumentStatus.COMPLETED;
+    }
+
+    // 분석 실패 시 호출
+    public void failAnalysis() {
+        this.status = DocumentStatus.FAILED;
     }
 
 }

@@ -28,7 +28,7 @@ public class AiWorkerClient {
     @Value("${ai-worker.url}")
     private String aiWorkerUrl;
 
-    public AiSummaryResponse extractPdfSummary(MultipartFile file) throws IOException {
+    public AiSummaryResponse extractPdfSummary(byte[] fileBytes, String filename) throws IOException {
         String url = aiWorkerUrl + "/api/v1/pdf/extract";
 
         // 헤더 설정
@@ -39,10 +39,10 @@ public class AiWorkerClient {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
         // 기존 파일명을 유지
-        ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
+        ByteArrayResource fileResource = new ByteArrayResource(fileBytes) {
             @Override
             public String getFilename() {
-                return file.getOriginalFilename(); // 기존 PDF 파일명 유지
+                return filename; // 기존 PDF 파일명 유지
             }
         };
         body.add("file", fileResource); // 파이썬의 file: UploadFile 파라미터 이름과 일치

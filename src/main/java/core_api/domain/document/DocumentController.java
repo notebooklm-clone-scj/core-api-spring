@@ -18,13 +18,14 @@ public class DocumentController {
 
     // PDF 업로드 및 요약
     @PostMapping
-    public ResponseEntity<AiSummaryResponse> uploadDocument(
+    public ResponseEntity<Long> uploadDocument(
             @PathVariable("notebookId") Long notebookId,
             @RequestParam("file") MultipartFile file) {
 
-        // 넘어온 PDF 파일을 Service에 전달
-        AiSummaryResponse response = documentService.uploadAndSummarizeDocument(notebookId, file);
-        return ResponseEntity.ok(response);
+        // 넘어온 PDF 파일을 Service에 전달 -> 요약 결과를 기다리지 않고 문서 ID만 전달
+        Long documentId = documentService.uploadAndSummarizeDocumentAsync(notebookId, file);
+
+        return ResponseEntity.ok(documentId);
     }
 
     // 노트북 내 문서 목록 조회
