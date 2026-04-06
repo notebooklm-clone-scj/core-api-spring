@@ -2,6 +2,7 @@ package core_api.domain.chat;
 
 import core_api.domain.chat.dto.AiChatRequest;
 import core_api.domain.chat.dto.AiChatResponse;
+import core_api.domain.chat.dto.ChatHistoryResponse;
 import core_api.domain.notebook.Notebook;
 import core_api.domain.notebook.NotebookRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,5 +49,13 @@ public class ChatService {
         chatHistoryRepository.save(aiChat);
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatHistoryResponse> getChatHistory(Long notebookId) {
+        List<ChatHistory> histories = chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId);
+        return histories.stream()
+                .map(ChatHistoryResponse::from)
+                .collect(Collectors.toList());
     }
 }
