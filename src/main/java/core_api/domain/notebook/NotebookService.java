@@ -6,6 +6,8 @@ import core_api.domain.notebook.dto.NotebookCreateRequest;
 import core_api.domain.notebook.dto.NotebookResponse;
 import core_api.domain.user.User;
 import core_api.domain.user.UserRepository;
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +25,7 @@ public class NotebookService {
     @Transactional
     public Long createNotebook(NotebookCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다"));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Notebook notebook = Notebook.builder()
                 .title(request.getTitle())
@@ -36,7 +38,7 @@ public class NotebookService {
     @Transactional(readOnly = true)
     public List<NotebookResponse> getNotebooks(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다"));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         return notebookRepository.findAllByUser(user).stream()
                 .map(NotebookResponse::from)

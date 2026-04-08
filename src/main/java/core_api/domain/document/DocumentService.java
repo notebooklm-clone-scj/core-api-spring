@@ -5,6 +5,8 @@ import core_api.domain.document.dto.AiSummaryResponse;
 import core_api.domain.document.dto.DocumentResponse;
 import core_api.domain.notebook.Notebook;
 import core_api.domain.notebook.NotebookRepository;
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -30,7 +32,7 @@ public class DocumentService {
     public Long uploadAndSummarizeDocumentAsync(Long notebookId, MultipartFile file) {
         // 노트북 존재 확인
         Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(()->new IllegalArgumentException("해당 노트북을 찾을 수 없습니다."));
+                .orElseThrow(()->new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
 
         try{
             // MultipartFile의 데이터를 미리 byte[]로 읽기 (비동기 쓰레드 안전)
@@ -53,7 +55,8 @@ public class DocumentService {
             return savedDoc.getId();
 
         } catch (IOException e) {
-            throw new RuntimeException("파일을 읽는 중 에러가 발생했습니다.", e);
+            log.error("파일 읽기 실패: ", e);
+            throw new CustomException(ErrorCode.FILE_READ_ERROR);
         }
     }
 
@@ -64,7 +67,7 @@ public class DocumentService {
     public List<DocumentResponse> getDocumentsByNotebook(Long notebookId) {
         // 노트북이 있는지 확인
         if (!notebookRepository.existsById(notebookId)) {
-            throw new IllegalArgumentException("해당 노트북을 찾을 수 없습니다.");
+            throw new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND);
         }
 
         // 해당 노트북의 문서를 조회
