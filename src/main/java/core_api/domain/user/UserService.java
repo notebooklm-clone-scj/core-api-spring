@@ -1,5 +1,7 @@
 package core_api.domain.user;
 
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,7 @@ public class UserService {
     public Long signup(UserSignupRequest request) {
         // 1. 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         // 2. 전달받은 데이터로 User 엔티티 조립 (추후 비밀번호 암호화 예정)
@@ -34,10 +36,10 @@ public class UserService {
     @Transactional
     public String login(UserLoginRequest request) {
         User user = userRepository.findByEmail((request.getEmail()))
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!user.getPassword().equals(request.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 틀렸습니다.");
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
         return jwtProvider.createToken(user.getId());

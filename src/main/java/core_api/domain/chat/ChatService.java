@@ -5,6 +5,8 @@ import core_api.domain.chat.dto.AiChatResponse;
 import core_api.domain.chat.dto.ChatHistoryResponse;
 import core_api.domain.notebook.Notebook;
 import core_api.domain.notebook.NotebookRepository;
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,7 @@ public class ChatService {
     public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
         // 노트북 존재 유무 확인
         Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 노트북을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
 
         // 유저의 질문을 DB에 저장 (역할: USER)
         ChatHistory userChat = ChatHistory.builder()
