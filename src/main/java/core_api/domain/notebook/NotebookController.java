@@ -6,6 +6,7 @@ import core_api.domain.document.dto.AiSummaryResponse;
 import core_api.domain.document.dto.DocumentResponse;
 import core_api.domain.notebook.dto.NotebookCreateRequest;
 import core_api.domain.notebook.dto.NotebookResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class NotebookController {
 
     // 노트북 생성
     @PostMapping
-    public ResponseEntity<String> createNotebook(@RequestBody NotebookCreateRequest request) {
+    public ResponseEntity<String> createNotebook(@Valid @RequestBody NotebookCreateRequest request) {
         Long notebookId = notebookService.createNotebook(request);
         return ResponseEntity.ok("노트북 생성 성공 : " + notebookId);
     }

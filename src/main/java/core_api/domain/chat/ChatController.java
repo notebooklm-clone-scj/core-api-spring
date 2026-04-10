@@ -3,6 +3,7 @@ package core_api.domain.chat;
 import core_api.domain.chat.dto.AiChatRequest;
 import core_api.domain.chat.dto.AiChatResponse;
 import core_api.domain.chat.dto.ChatHistoryResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class ChatController {
     @PostMapping
     public ResponseEntity<AiChatResponse> chat(
             @PathVariable("notebookId") Long notebookId,
-            @RequestBody AiChatRequest request) {
+            @Valid @RequestBody AiChatRequest request) {
 
         AiChatResponse response = chatService.chatWithNotebook(notebookId, request);
         return ResponseEntity.ok(response);
