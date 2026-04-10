@@ -1,9 +1,10 @@
 package core_api.domain.user;
 
+import core_api.domain.user.dto.UserLoginRequest;
+import core_api.domain.user.dto.UserSignupRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

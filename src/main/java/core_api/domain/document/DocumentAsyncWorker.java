@@ -2,6 +2,8 @@ package core_api.domain.document;
 
 import core_api.domain.chat.AiWorkerClient;
 import core_api.domain.document.dto.AiSummaryResponse;
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -29,7 +31,7 @@ public class DocumentAsyncWorker {
 
             // DB에서 저장했던 문서를 다시 찾음, DB 업데이트 로직 (이 순간에만 짧게 DB 사용)
             Document document = documentRepository.findById(documentId)
-                    .orElseThrow(() -> new RuntimeException("문서를 찾을 수 없습니다. ID: " + documentId));
+                    .orElseThrow(() -> new CustomException(ErrorCode.DOCUMENT_NOT_FOUND));
 
             // 엔티티 내부 메서드를 호출하여 상태를 'COMPLETED'로 변경하고 결과 저장
             document.completeAnalysis(

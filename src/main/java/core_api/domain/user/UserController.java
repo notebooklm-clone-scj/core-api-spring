@@ -1,7 +1,10 @@
 package core_api.domain.user;
 
+import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserLoginResponse;
+import core_api.domain.user.dto.UserSignupRequest;
 import core_api.domain.user.dto.UserSignupResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +20,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<UserSignupResponse> signup(@RequestBody UserSignupRequest request) {
+    public ResponseEntity<UserSignupResponse> signup(@Valid @RequestBody UserSignupRequest request) {
         Long userId = userService.signup(request);
 
         UserSignupResponse response = new UserSignupResponse(userId, "회원가입이 완료되었습니다.");
@@ -25,7 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserLoginResponse> login(@RequestBody UserLoginRequest request) {
+    public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
         String token = userService.login(request);
 
         UserLoginResponse response = new UserLoginResponse(token);

@@ -19,11 +19,19 @@ public enum ErrorCode {
     // PDF 관련 에러
     PDF_EXTRACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P001", "PDF 텍스트 추출에 실패했습니다."),
 
+    // 문서 관련 에러
+    DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "해당 문서를 찾을 수 없습니다."),
+
     // 파일 관련 에러
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일을 읽는 중 에러가 발생했습니다."),
 
+    // AI 관련 에러
+    AI_WORKER_ERROR(HttpStatus.BAD_GATEWAY, "A001", "AI 분석 서버와 통신 중 오류가 발생했습니다."),
+    AI_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "A002", "AI 분석 서버의 응답이 비어 있습니다."),
+
     // 공통 에러
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "잘못된 입력값입니다."),
+    INVALID_REQUEST_BODY(HttpStatus.BAD_REQUEST, "C002", "요청 본문 형식이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C999", "서버 내부 에러가 발생했습니다.");
 
     private final HttpStatus status;

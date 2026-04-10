@@ -1,9 +1,9 @@
 package core_api.domain.user;
 
+import core_api.domain.user.dto.UserLoginRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
