@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,19 +29,20 @@ public class ChatService {
         Notebook notebook = notebookRepository.findById(notebookId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
 
+        // 이 방의 최근 6개의 과거 대화 내역 꺼내오기
+        List<ChatHistory> recentHistory = chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId);
+
+        Collections.reverse(recentHistory);
+
+        // 파이썬에게 '질문' + '과거 대화 내역'을 같이 전송
+        AiChatResponse response = aiWorkerClient.askQuestionWithHistory(request.getQuestion(), recentHistory);
+
         // 유저의 질문을 DB에 저장 (역할: USER)
         ChatHistory userChat = ChatHistory.builder()
                 .notebook(notebook)
                 .role("USER")
                 .message(request.getQuestion())
                 .build();
-        chatHistoryRepository.save(userChat);
-
-        // 이 방의 모든 과거 대화 내역 꺼내오기 (방금 저장한 내 질문 포함!)
-        List<ChatHistory> historyList = chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId);
-
-        // 파이썬에게 '질문' + '과거 대화 내역'을 같이 전송
-        AiChatResponse response = aiWorkerClient.askQuestionWithHistory(request.getQuestion(), historyList);
 
         // 파이썬이 만들어준 AI의 답변을 DB에 저장 (역할: AI)
         ChatHistory aiChat = ChatHistory.builder()
@@ -48,7 +50,8 @@ public class ChatService {
                 .role("AI")
                 .message(response.getAnswer())
                 .build();
-        chatHistoryRepository.save(aiChat);
+
+        chatHistoryRepository.saveAll(List.of(userChat, aiChat));
 
         return response;
     }

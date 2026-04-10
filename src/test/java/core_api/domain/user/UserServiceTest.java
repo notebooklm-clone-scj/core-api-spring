@@ -1,5 +1,7 @@
 package core_api.domain.user;
 
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -62,8 +64,9 @@ public class UserServiceTest {
         //when
         //then
         assertThatThrownBy(() -> userService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("비밀번호가 틀렸습니다.");
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_PASSWORD);
     }
 
 

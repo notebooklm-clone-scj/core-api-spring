@@ -4,6 +4,8 @@ import core_api.domain.notebook.dto.NotebookCreateRequest;
 import core_api.domain.notebook.dto.NotebookResponse;
 import core_api.domain.user.User;
 import core_api.domain.user.UserRepository;
+import core_api.global.exception.CustomException;
+import core_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,7 +86,8 @@ public class NotebookServiceTest {
         // when
         // then
         assertThatThrownBy(() -> notebookService.createNotebook(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("존재하지 않는 유저입니다");
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 }
