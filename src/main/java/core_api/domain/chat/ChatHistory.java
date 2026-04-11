@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -32,6 +34,11 @@ public class ChatHistory {
     // 대화 내용 (text 타입으로 저장)
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
+
+    @Builder.Default
+    @OrderBy("sortOrder ASC")
+    @OneToMany(mappedBy = "chatHistory", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatReference> references = new ArrayList<>();
 
     // 대화가 생성된 시간
     @Column(updatable = false)

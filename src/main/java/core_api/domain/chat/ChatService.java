@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class ChatService {
     private final NotebookRepository notebookRepository;
     private final AiWorkerClient aiWorkerClient;
     private final ChatHistoryRepository chatHistoryRepository;
+    private final ChatReferenceRepository chatReferenceRepository;
 
     @Transactional
     public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
@@ -51,7 +53,27 @@ public class ChatService {
                 .message(response.getAnswer())
                 .build();
 
-        chatHistoryRepository.saveAll(List.of(userChat, aiChat));
+        chatHistoryRepository.save(userChat);
+        ChatHistory savedAiChat = chatHistoryRepository.save(aiChat);
+
+        List<AiChatResponse.ReferenceChunk> referenceChunks = response.getReference_chunks();
+
+        if (referenceChunks != null && !referenceChunks.isEmpty()) {
+            List<ChatReference> references = new ArrayList<>();
+
+            for (int index = 0; index < referenceChunks.size(); index++) {
+                AiChatResponse.ReferenceChunk chunk = referenceChunks.get(index);
+
+                references.add(ChatReference.builder()
+                        .chatHistory(savedAiChat)
+                        .pageNumber(chunk.getPage_number())
+                        .content(chunk.getContent())
+                        .sortOrder(index)
+                        .build());
+            }
+
+            chatReferenceRepository.saveAll(references);
+        }
 
         return response;
     }
