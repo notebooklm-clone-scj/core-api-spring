@@ -1,6 +1,7 @@
 package core_api.domain.chat;
 
 import core_api.domain.chat.dto.AiChatResponse;
+import core_api.domain.chat.dto.AiConversationSummaryResponse;
 import core_api.domain.document.dto.AiSummaryResponse;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
@@ -74,7 +75,11 @@ public class AiWorkerClient {
         }
     }
 
-    public AiChatResponse askQuestionWithHistory(String question, List<ChatHistory> historyList) {
+    public AiChatResponse askQuestionWithHistory(
+            String question,
+            String conversationSummary,
+            List<ChatHistory> historyList) {
+
         String endpoint = aiWorkerUrl + "/api/v1/chat/";
 
         try {
@@ -82,18 +87,14 @@ public class AiWorkerClient {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // Spring의 ChatHistory 객체들을 파이썬이 읽기 편한 간단한 Map 구조로 변환
-            List<Map<String, String>> formattedHistory = historyList.stream().map(h -> {
-                Map<String, String> map = new HashMap<>();
-                map.put("role", h.getRole());
-                map.put("message", h.getMessage());
-                return map;
-            }).collect(Collectors.toList());
+
+
 
             // Body에 내용물(question, history) 저장
             Map<String, Object> body = new HashMap<>();
             body.put("question", question);
-            body.put("history", formattedHistory);
+            body.put("conversation_summary", conversationSummary);
+            body.put("history", formatHistory(historyList));
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
@@ -108,5 +109,43 @@ public class AiWorkerClient {
         } catch (RestClientException e) {
             throw new CustomException(ErrorCode.AI_WORKER_ERROR);
         }
+    }
+
+    public String summarizeConversation(String existingSummary, List<ChatHistory> histories) {
+        String endpoint = aiWorkerUrl + "/api/v1/chat/summary";
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("existing_summary", existingSummary);
+            body.put("history", formatHistory(histories));
+
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            AiConversationSummaryResponse response = restTemplate.postForObject(endpoint, requestEntity, AiConversationSummaryResponse.class);
+
+            if (response == null || response.getSummary() == null || response.getSummary().isBlank()) {
+                throw new CustomException(ErrorCode.AI_RESPONSE_EMPTY);
+            }
+
+            return response.getSummary();
+
+        } catch (RestClientException e) {
+            throw new CustomException(ErrorCode.AI_WORKER_ERROR);
+        }
+    }
+
+    // Spring의 ChatHistory 객체들을 파이썬이 읽기 편한 간단한 Map 구조로 변환
+    private List<Map<String, String>> formatHistory(List<ChatHistory> historyList) {
+        return historyList.stream()
+                .map(h -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("role", h.getRole());
+                    map.put("message", h.getMessage());
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 }

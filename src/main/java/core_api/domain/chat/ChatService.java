@@ -20,10 +20,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatService {
 
+    private static final int RECENT_HISTORY_LIMIT = 6;
+    private static final int SUMMARY_TRIGGER_SIZE = 6;
+
     private final NotebookRepository notebookRepository;
     private final AiWorkerClient aiWorkerClient;
     private final ChatHistoryRepository chatHistoryRepository;
     private final ChatReferenceRepository chatReferenceRepository;
+    private final ChatMemoryRepository chatMemoryRepository;
 
     @Transactional
     public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
@@ -31,13 +35,16 @@ public class ChatService {
         Notebook notebook = notebookRepository.findById(notebookId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
 
-        // 이 방의 최근 6개의 과거 대화 내역 꺼내오기
-        List<ChatHistory> recentHistory = chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId);
+        ChatMemory chatMemory = chatMemoryRepository.findByNotebookId(notebookId).orElse(null);
+        String conversationSummary = chatMemory != null ? chatMemory.getSummary() :  null;
 
+        // 이 방의 최근 6개의 과거 대화 내역 꺼내오기
+        List<ChatHistory> recentHistory =
+                new ArrayList<>(chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId));
         Collections.reverse(recentHistory);
 
         // 파이썬에게 '질문' + '과거 대화 내역'을 같이 전송
-        AiChatResponse response = aiWorkerClient.askQuestionWithHistory(request.getQuestion(), recentHistory);
+        AiChatResponse response = aiWorkerClient.askQuestionWithHistory(request.getQuestion(), conversationSummary, recentHistory);
 
         // 유저의 질문을 DB에 저장 (역할: USER)
         ChatHistory userChat = ChatHistory.builder()
@@ -56,24 +63,8 @@ public class ChatService {
         chatHistoryRepository.save(userChat);
         ChatHistory savedAiChat = chatHistoryRepository.save(aiChat);
 
-        List<AiChatResponse.ReferenceChunk> referenceChunks = response.getReference_chunks();
-
-        if (referenceChunks != null && !referenceChunks.isEmpty()) {
-            List<ChatReference> references = new ArrayList<>();
-
-            for (int index = 0; index < referenceChunks.size(); index++) {
-                AiChatResponse.ReferenceChunk chunk = referenceChunks.get(index);
-
-                references.add(ChatReference.builder()
-                        .chatHistory(savedAiChat)
-                        .pageNumber(chunk.getPage_number())
-                        .content(chunk.getContent())
-                        .sortOrder(index)
-                        .build());
-            }
-
-            chatReferenceRepository.saveAll(references);
-        }
+        saveReferences(savedAiChat, response.getReference_chunks());
+        refreshConversationMemory(notebook, chatMemory);
 
         return response;
     }
@@ -84,5 +75,70 @@ public class ChatService {
         return histories.stream()
                 .map(ChatHistoryResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    private void saveReferences(ChatHistory savedAiChat, List<AiChatResponse.ReferenceChunk> referenceChunks) {
+        if (referenceChunks == null || referenceChunks.isEmpty()) {
+            return;
+        }
+
+        List<ChatReference> references = new ArrayList<>();
+
+        for (int index = 0; index < referenceChunks.size(); index++) {
+            AiChatResponse.ReferenceChunk chunk = referenceChunks.get(index);
+
+            references.add(ChatReference.builder()
+                    .chatHistory(savedAiChat)
+                    .pageNumber(chunk.getPage_number())
+                    .content(chunk.getContent())
+                    .sortOrder(index)
+                    .build());
+        }
+
+        chatReferenceRepository.saveAll(references);
+    }
+
+    private void refreshConversationMemory(Notebook notebook, ChatMemory existingMemory) {
+        List<ChatHistory> unsummarizedHistories = getUnsummarizedHistories(notebook.getId(), existingMemory);
+
+        if (unsummarizedHistories.size() <= RECENT_HISTORY_LIMIT) {
+            return;
+        }
+
+        int summarizeEndIndex = unsummarizedHistories.size() - RECENT_HISTORY_LIMIT;
+        List<ChatHistory> historiesToSummarize = new ArrayList<>(unsummarizedHistories.subList(0, summarizeEndIndex));
+
+        if (historiesToSummarize.size() < SUMMARY_TRIGGER_SIZE) {
+            return;
+        }
+
+        String previousSummary = existingMemory != null ? existingMemory.getSummary() : null;
+        String mergedSummary = aiWorkerClient.summarizeConversation(previousSummary, historiesToSummarize);
+
+        Long lastSummarizedId = historiesToSummarize.get(historiesToSummarize.size() - 1).getId();
+
+        if (existingMemory == null) {
+            ChatMemory newMemory = ChatMemory.builder()
+                    .notebook(notebook)
+                    .summary(mergedSummary)
+                    .lastSummarizedChatHistoryId(lastSummarizedId)
+                    .build();
+
+            chatMemoryRepository.save(newMemory);
+            return;
+        }
+
+        existingMemory.updateSummary(mergedSummary, lastSummarizedId);
+    }
+
+    private List<ChatHistory> getUnsummarizedHistories(Long notebookId, ChatMemory existingMemory) {
+        if (existingMemory == null || existingMemory.getLastSummarizedChatHistoryId() == null) {
+            return chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId);
+        }
+
+        return chatHistoryRepository.findByNotebookIdAndIdGreaterThanOrderByCreatedAtAsc(
+                notebookId,
+                existingMemory.getLastSummarizedChatHistoryId()
+        );
     }
 }
