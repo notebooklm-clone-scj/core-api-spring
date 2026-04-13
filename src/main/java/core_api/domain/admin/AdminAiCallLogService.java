@@ -21,14 +21,12 @@ public class AdminAiCallLogService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    private final AdminAuthService adminAuthService;
     private final AiCallLogRepository aiCallLogRepository;
 
-    // 관리자 인증을 통과한 사용자만 AI 호출 로그 목록을 조회할 수 있습니다.
-    // 처음 버전은 필터(success, requestType, notebookId, documentId)와 페이지네이션만 지원합니다.
+    // 관리자 인증과 인가는 이제 Spring Security가 먼저 처리
+    // 이 서비스는 인증이 끝난 뒤 실제 로그 조회에만 집중
     @Transactional(readOnly = true)
     public AdminAiCallLogPageResponse getAiCallLogs(
-            String authorizationHeader,
             Boolean success,
             AiRequestType requestType,
             Long notebookId,
@@ -36,8 +34,6 @@ public class AdminAiCallLogService {
             Integer page,
             Integer size
     ) {
-        adminAuthService.authenticateAdmin(authorizationHeader);
-
         PageRequest pageRequest = PageRequest.of(
                 normalizePage(page),
                 normalizeSize(size),
