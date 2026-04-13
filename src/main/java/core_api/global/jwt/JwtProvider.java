@@ -30,7 +30,7 @@ public class JwtProvider {
                 .setSubject(userId.toString()) // 토큰의 주인 (유저 PK)
                 .setIssuedAt(now)              // 발급 시간
                 .setExpiration(validity)       // 만료 시간
-                .signWith(key, SignatureAlgorithm.HS256) // 비밀 도장 쾅!
+                .signWith(key, SignatureAlgorithm.HS256) // 비밀
                 .compact();
     }
 

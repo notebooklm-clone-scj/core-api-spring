@@ -31,6 +31,12 @@ public class User {
     @Column(nullable = false, length = 50)
     private String nickname;
 
+    // 권한 기반 기능 확장
+    // 현재는 USER / ADMIN 두 가지 역할만 사용
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Role role;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -39,9 +45,18 @@ public class User {
     private LocalDateTime updatedAt;
 
     @Builder
-    public User(String email, String password, String nickname) {
+    public User(String email, String password, String nickname, Role role) {
         this.email = email;
         this.password = password;
         this.nickname = nickname;
+        this.role = role == null ? Role.USER : role;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        // 혹시라도 role 값이 비어 있는 상태로 저장되려 하면 기본 USER로 보정합니다.
+        if (role == null) {
+            role = Role.USER;
+        }
     }
 }
