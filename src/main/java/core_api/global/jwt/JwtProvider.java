@@ -34,4 +34,17 @@ public class JwtProvider {
                 .compact();
     }
 
+    // 지금 프로젝트의 JWT는 subject에 userId만 담고 있으므로
+    // 관리자 API에서는 이 값을 다시 꺼내 DB의 role과 대조해서 권한을 판별합니다.
+    public Long extractUserId(String token) {
+        String subject = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+
+        return Long.valueOf(subject);
+    }
+
 }

@@ -12,6 +12,9 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "존재하지 않는 이메일(아이디)입니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "U002", "비밀번호가 일치하지 않습니다."),
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "U003", "이미 가입된 이메일입니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "U004", "유효하지 않은 인증 토큰입니다."),
+    AUTH_HEADER_MISSING(HttpStatus.UNAUTHORIZED, "U005", "인증 헤더가 필요합니다."),
+    ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "U006", "관리자만 접근할 수 있습니다."),
 
     // Notebook 관련 에러
     NOTEBOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "N001", "해당 노트북을 찾을 수 없습니다."),
