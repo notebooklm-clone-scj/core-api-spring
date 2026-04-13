@@ -5,7 +5,6 @@ import core_api.domain.aicall.AiRequestType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +23,6 @@ public class AdminAiCallLogController {
     // - /api/v1/admin/ai-call-logs?requestType=CHAT
     @GetMapping
     public ResponseEntity<AdminAiCallLogPageResponse> getAiCallLogs(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestParam(required = false) Boolean success,
             @RequestParam(required = false) AiRequestType requestType,
             @RequestParam(required = false) Long notebookId,
@@ -33,7 +31,6 @@ public class AdminAiCallLogController {
             @RequestParam(required = false) Integer size
     ) {
         AdminAiCallLogPageResponse response = adminAiCallLogService.getAiCallLogs(
-                authorizationHeader,
                 success,
                 requestType,
                 notebookId,
