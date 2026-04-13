@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String token = authorizationHeader.substring(BEARER_PREFIX.length());
-            Long userId = jwtProvider.extractUserId(token);
+            Long userId = jwtProvider.extractAccessTokenUserId(token);
 
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new JwtAuthenticationException(ErrorCode.INVALID_TOKEN));

@@ -60,7 +60,7 @@ class JwtAuthenticationFilterTest {
                 .build();
         request.addHeader("Authorization", "Bearer admin-token");
 
-        given(jwtProvider.extractUserId("admin-token")).willReturn(1L);
+        given(jwtProvider.extractAccessTokenUserId("admin-token")).willReturn(1L);
         given(userRepository.findById(1L)).willReturn(Optional.of(adminUser));
 
         // when
@@ -85,7 +85,7 @@ class JwtAuthenticationFilterTest {
         FilterChain filterChain = (req, res) -> {};
         request.addHeader("Authorization", "Bearer broken-token");
 
-        given(jwtProvider.extractUserId("broken-token")).willThrow(new io.jsonwebtoken.MalformedJwtException("bad token"));
+        given(jwtProvider.extractAccessTokenUserId("broken-token")).willThrow(new io.jsonwebtoken.MalformedJwtException("bad token"));
 
         // when
         jwtAuthenticationFilter.doFilter(request, response, filterChain);
