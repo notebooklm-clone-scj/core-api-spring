@@ -1,6 +1,7 @@
 package core_api.domain.user;
 
 import core_api.domain.user.dto.UserLoginRequest;
+import core_api.domain.user.dto.UserSignupRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
@@ -10,12 +11,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -28,6 +31,31 @@ public class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    @Test
+    @DisplayName("회원가입 시 role은 항상 USER로 저장")
+    void signup_success_role_is_user() {
+        // given
+        UserSignupRequest request = new UserSignupRequest("test@gmail.com", "password123!", "테스터");
+        User savedUser = User.builder()
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .nickname(request.getNickname())
+                .role(Role.USER)
+                .build();
+
+        given(userRepository.existsByEmail(request.getEmail())).willReturn(false);
+        given(userRepository.save(any(User.class))).willReturn(savedUser);
+
+        // when
+        userService.signup(request);
+
+        // then
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        assertThat(userCaptor.getValue().getRole()).isEqualTo(Role.USER);
+    }
 
     @Test
     @DisplayName("로그인 성공 시 JWT 토큰을 정상적으로 반환")
