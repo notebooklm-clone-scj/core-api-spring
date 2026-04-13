@@ -2,12 +2,15 @@ package core_api.domain.user;
 
 import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserLoginResponse;
+import core_api.domain.user.dto.UserLogoutResponse;
 import core_api.domain.user.dto.UserSignupRequest;
 import core_api.domain.user.dto.UserSignupResponse;
 import core_api.domain.user.dto.UserTokenRefreshRequest;
+import core_api.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +41,13 @@ public class UserController {
     @PostMapping("/refresh")
     public ResponseEntity<UserLoginResponse> refresh(@Valid @RequestBody UserTokenRefreshRequest request) {
         UserLoginResponse response = userService.refresh(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<UserLogoutResponse> logout(Authentication authentication) {
+        AuthenticatedUser authenticatedUser = (AuthenticatedUser) authentication.getPrincipal();
+        UserLogoutResponse response = userService.logout(authenticatedUser.userId());
         return ResponseEntity.ok(response);
     }
 }

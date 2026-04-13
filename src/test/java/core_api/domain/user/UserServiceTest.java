@@ -2,6 +2,7 @@ package core_api.domain.user;
 
 import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserLoginResponse;
+import core_api.domain.user.dto.UserLogoutResponse;
 import core_api.domain.user.dto.UserSignupRequest;
 import core_api.domain.user.dto.UserTokenRefreshRequest;
 import core_api.global.exception.CustomException;
@@ -122,6 +123,20 @@ public class UserServiceTest {
         verify(refreshTokenService).saveRefreshToken(1L, "new-refresh-token");
         assertThat(response.getToken()).isEqualTo("new-access-token");
         assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+    }
+
+    @Test
+    @DisplayName("로그아웃 시 Redis의 refresh token을 삭제한다")
+    void logout_success() {
+        // given
+        Long userId = 1L;
+
+        // when
+        UserLogoutResponse response = userService.logout(userId);
+
+        // then
+        verify(refreshTokenService).deleteRefreshToken(userId);
+        assertThat(response.getMessage()).isEqualTo("로그아웃이 완료되었습니다.");
     }
 
 
