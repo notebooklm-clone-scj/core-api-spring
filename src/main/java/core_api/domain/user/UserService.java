@@ -3,6 +3,7 @@ package core_api.domain.user;
 import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserSignupRequest;
 import core_api.domain.user.dto.UserLoginResponse;
+import core_api.domain.user.dto.UserLogoutResponse;
 import core_api.domain.user.dto.UserTokenRefreshRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
@@ -71,5 +72,13 @@ public class UserService {
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
+    }
+
+    @Transactional
+    public UserLogoutResponse logout(Long userId) {
+        // 로그아웃은 Redis에 저장된 refresh token을 삭제해서
+        // 더 이상 access token 재발급이 되지 않도록 막는 방식으로 처리합니다.
+        refreshTokenService.deleteRefreshToken(userId);
+        return new UserLogoutResponse("로그아웃이 완료되었습니다.");
     }
 }

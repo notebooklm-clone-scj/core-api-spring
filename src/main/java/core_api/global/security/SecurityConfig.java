@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // 기존 프론트/백엔드 흐름을 크게 깨지 않기 위해 우선 관리자 경로만 보호
                         .requestMatchers("/api/v1/users/login", "/api/v1/users/signup", "/api/v1/users/refresh").permitAll()
+                        .requestMatchers("/api/v1/users/logout").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll()
                 )
