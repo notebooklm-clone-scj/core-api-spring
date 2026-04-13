@@ -78,7 +78,7 @@ public class ChatServiceTest {
         given(notebookRepository.findById(notebookId)).willReturn(Optional.of(notebook));
         given(chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId))
                 .willReturn(new ArrayList<>(List.of(oldAi, oldUser)));
-        given(aiWorkerClient.askQuestionWithHistory(any(), any(), any())).willReturn(response);
+        given(aiWorkerClient.askQuestionWithHistory(any(), any(), any(), any())).willReturn(response);
         given(chatMemoryRepository.findByNotebookId(notebookId)).willReturn(Optional.empty());
 
         ChatHistory savedAiChat = ChatHistory.builder()

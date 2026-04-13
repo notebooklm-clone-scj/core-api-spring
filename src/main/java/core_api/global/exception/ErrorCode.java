@@ -26,8 +26,10 @@ public enum ErrorCode {
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일을 읽는 중 에러가 발생했습니다."),
 
     // AI 관련 에러
+    // -> 외부 AI Worker는 timeout, 빈 응답, 일반 통신 실패를 구분하는 편이 운영에 더 유리하다.
     AI_WORKER_ERROR(HttpStatus.BAD_GATEWAY, "A001", "AI 분석 서버와 통신 중 오류가 발생했습니다."),
     AI_RESPONSE_EMPTY(HttpStatus.BAD_GATEWAY, "A002", "AI 분석 서버의 응답이 비어 있습니다."),
+    AI_WORKER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "A003", "AI 분석 서버 응답 시간이 초과되었습니다."),
 
     // 공통 에러
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "잘못된 입력값입니다."),
