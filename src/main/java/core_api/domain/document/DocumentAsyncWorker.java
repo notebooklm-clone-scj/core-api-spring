@@ -13,21 +13,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+// 문서 업로드 직후 오래 걸리는 AI 분석을 백그라운드로 넘기는 워커
+// 업로드 API 응답과 AI 분석 시간을 분리하기 위한 목적
 public class DocumentAsyncWorker {
 
     private final DocumentRepository documentRepository;
     private final AiWorkerClient aiWorkerClient;
 
-    // 실제 파이썬 서버와 통신하고 요약하는 백그라운드 작업
-    // @Transactional 제거 (외부 API 통신 중 DB 커넥션 점유 방지)
-    // 직접 만든 스레드 풀 지정
+    // 실제 파이썬 서버와 통신하는 무거운 작업
+    // 외부 API 호출 동안 DB 커넥션을 붙잡지 않기 위해 @Transactional은 메서드에 두지 않았다
+    // 대신 필요한 순간에만 DB를 짧게 읽고 저장
     @Async("documentTaskExecutor") // 비동기 실행
     public void analyzeDocumentInBackground(Long documentId, byte[] fileBytes, String filename) {
         log.info("비동기 분석 시작: {}", filename);
 
         try{
-            // 파이썬 서버로 파일 전송 및 요약 결과 수신, 외부 API 호출 (시간이 오래 걸림 - DB 커넥션 없음, 안전)
-            AiSummaryResponse aiResponse = aiWorkerClient.extractPdfSummary(fileBytes, filename);
+            // documentId를 같이 넘겨 PDF 요약 호출 실패 시에도 "어느 문서에서 실패했는지" 운영 로그에 남길 수 있게 한다.
+            AiSummaryResponse aiResponse = aiWorkerClient.extractPdfSummary(documentId, fileBytes, filename);
 
             // DB에서 저장했던 문서를 다시 찾음, DB 업데이트 로직 (이 순간에만 짧게 DB 사용)
             Document document = documentRepository.findById(documentId)
