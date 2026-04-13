@@ -2,6 +2,7 @@ package core_api.global.jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,37 +15,66 @@ import java.util.Date;
 public class JwtProvider {
 
     private final Key key;
-    private final long expiration;
+    private final long accessExpiration;
+    private final long refreshExpiration;
 
     public JwtProvider(@Value("${jwt.secret}") String secretKey,
-                       @Value("${jwt.expiration}") long expiration) {
+                       @Value("${jwt.access-expiration}") long accessExpiration,
+                       @Value("${jwt.refresh-expiration}") long refreshExpiration) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
-        this.expiration = expiration;
+        this.accessExpiration = accessExpiration;
+        this.refreshExpiration = refreshExpiration;
     }
 
-    public String createToken(Long userId) {
+    public String createAccessToken(Long userId) {
+        return createToken(userId, TokenType.ACCESS, accessExpiration);
+    }
+
+    public String createRefreshToken(Long userId) {
+        return createToken(userId, TokenType.REFRESH, refreshExpiration);
+    }
+
+    private String createToken(Long userId, TokenType tokenType, long expiration) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .setSubject(userId.toString()) // 토큰의 주인 (유저 PK)
+                .claim("type", tokenType.name())
                 .setIssuedAt(now)              // 발급 시간
                 .setExpiration(validity)       // 만료 시간
                 .signWith(key, SignatureAlgorithm.HS256) // 비밀
                 .compact();
     }
 
-    // 지금 프로젝트의 JWT는 subject에 userId만 담고 있으므로
-    // 관리자 API에서는 이 값을 다시 꺼내 DB의 role과 대조해서 권한을 판별합니다.
-    public Long extractUserId(String token) {
-        String subject = Jwts.parserBuilder()
+    public Long extractAccessTokenUserId(String token) {
+        return extractUserId(token, TokenType.ACCESS);
+    }
+
+    public Long extractRefreshTokenUserId(String token) {
+        return extractUserId(token, TokenType.REFRESH);
+    }
+
+    private Long extractUserId(String token, TokenType expectedType) {
+        Claims claims = parseClaims(token);
+        validateTokenType(claims, expectedType);
+
+        return Long.valueOf(claims.getSubject());
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+    }
 
-        return Long.valueOf(subject);
+    private void validateTokenType(Claims claims, TokenType expectedType) {
+        String type = claims.get("type", String.class);
+        if (type == null || !expectedType.name().equals(type)) {
+            throw new IllegalArgumentException("Invalid token type");
+        }
     }
 
 }

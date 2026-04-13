@@ -2,9 +2,12 @@ package core_api.domain.user;
 
 import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserSignupRequest;
+import core_api.domain.user.dto.UserLoginResponse;
+import core_api.domain.user.dto.UserTokenRefreshRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final JwtProvider  jwtProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public Long signup(UserSignupRequest request) {
@@ -37,7 +41,7 @@ public class UserService {
     }
 
     @Transactional
-    public String login(UserLoginRequest request) {
+    public UserLoginResponse login(UserLoginRequest request) {
         User user = userRepository.findByEmail((request.getEmail()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -45,8 +49,27 @@ public class UserService {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
-        // 로그인 토큰은 기존과 동일하게 userId만 담습니다.
-        // 관리자 권한 검사는 이후 admin API에서 DB 조회로 판별하는 방식으로 확장할 예정입니다.
-        return jwtProvider.createToken(user.getId());
+        String accessToken = jwtProvider.createAccessToken(user.getId());
+        String refreshToken = jwtProvider.createRefreshToken(user.getId());
+        refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
+
+        // token 필드는 프론트 하위 호환을 위해 access token을 그대로 유지합니다.
+        return new UserLoginResponse(accessToken, refreshToken);
+    }
+
+    @Transactional(readOnly = true)
+    public UserLoginResponse refresh(UserTokenRefreshRequest request) {
+        try {
+            Long userId = jwtProvider.extractRefreshTokenUserId(request.getRefreshToken());
+            refreshTokenService.validateRefreshToken(userId, request.getRefreshToken());
+
+            String newAccessToken = jwtProvider.createAccessToken(userId);
+            String newRefreshToken = jwtProvider.createRefreshToken(userId);
+            refreshTokenService.saveRefreshToken(userId, newRefreshToken);
+
+            return new UserLoginResponse(newAccessToken, newRefreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
     }
 }

@@ -4,6 +4,7 @@ import core_api.domain.user.dto.UserLoginRequest;
 import core_api.domain.user.dto.UserLoginResponse;
 import core_api.domain.user.dto.UserSignupRequest;
 import core_api.domain.user.dto.UserSignupResponse;
+import core_api.domain.user.dto.UserTokenRefreshRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,14 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
-        String token = userService.login(request);
+        UserLoginResponse response = userService.login(request);
 
-        UserLoginResponse response = new UserLoginResponse(token);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<UserLoginResponse> refresh(@Valid @RequestBody UserTokenRefreshRequest request) {
+        UserLoginResponse response = userService.refresh(request);
         return ResponseEntity.ok(response);
     }
 }

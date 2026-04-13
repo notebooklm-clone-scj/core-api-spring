@@ -1,7 +1,9 @@
 package core_api.domain.user;
 
 import core_api.domain.user.dto.UserLoginRequest;
+import core_api.domain.user.dto.UserLoginResponse;
 import core_api.domain.user.dto.UserSignupRequest;
+import core_api.domain.user.dto.UserTokenRefreshRequest;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import core_api.global.jwt.JwtProvider;
@@ -28,6 +30,9 @@ public class UserServiceTest {
 
     @Mock
     private JwtProvider jwtProvider;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private UserService userService;
@@ -58,7 +63,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 시 JWT 토큰을 정상적으로 반환")
+    @DisplayName("로그인 성공 시 access token과 refresh token을 정상적으로 반환")
     void login_success(){
         //given
         UserLoginRequest request = new UserLoginRequest("test@gmail.com", "password123!");
@@ -69,12 +74,14 @@ public class UserServiceTest {
                 .build();
 
         given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(fakeUser));
-        given(jwtProvider.createToken(any())).willReturn("fake-jwt-token");
+        given(jwtProvider.createAccessToken(any())).willReturn("fake-access-token");
+        given(jwtProvider.createRefreshToken(any())).willReturn("fake-refresh-token");
         //when
-        String token = userService.login(request);
+        UserLoginResponse response = userService.login(request);
 
         //then
-        assertThat(token).isEqualTo("fake-jwt-token");
+        assertThat(response.getToken()).isEqualTo("fake-access-token");
+        assertThat(response.getRefreshToken()).isEqualTo("fake-refresh-token");
     }
 
     @Test
@@ -95,6 +102,26 @@ public class UserServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_PASSWORD);
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 재발급 시 access token과 refresh token이 새로 발급된다")
+    void refresh_success() {
+        // given
+        UserTokenRefreshRequest request = new UserTokenRefreshRequest("old-refresh-token");
+
+        given(jwtProvider.extractRefreshTokenUserId("old-refresh-token")).willReturn(1L);
+        given(jwtProvider.createAccessToken(1L)).willReturn("new-access-token");
+        given(jwtProvider.createRefreshToken(1L)).willReturn("new-refresh-token");
+
+        // when
+        UserLoginResponse response = userService.refresh(request);
+
+        // then
+        verify(refreshTokenService).validateRefreshToken(1L, "old-refresh-token");
+        verify(refreshTokenService).saveRefreshToken(1L, "new-refresh-token");
+        assertThat(response.getToken()).isEqualTo("new-access-token");
+        assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
     }
 
 
