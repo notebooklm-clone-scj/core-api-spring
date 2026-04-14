@@ -1,5 +1,6 @@
 package core_api.domain.user.dto;
 
+import core_api.domain.user.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,4 +9,5 @@ import lombok.Getter;
 public class UserLoginResponse {
     private String token;
     private String refreshToken;
+    private Role role;
 }
