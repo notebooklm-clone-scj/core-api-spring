@@ -24,10 +24,14 @@
 
 ## 포함된 기능
 
-- JWT 발급
+- Spring Security + JWT Filter 기반 인증
+- Access / Refresh Token 발급과 재발급
+- Redis 기반 refresh token rotation
 - 문서 비동기 분석 시작점
 - 최근 대화 윈도우 기반 AI 요청
+- 대화 요약 메모리 저장
 - AI 답변 레퍼런스 저장 및 재조회
+- AI 호출 로그 저장 및 관리자 조회 API
 - validation + 공통 에러 응답 구조
 
 ## 실행
@@ -45,5 +49,4 @@ cd /Users/seochanjin/workspace/notebooklm/core-api-spring
 
 ## 관련 문서
 
-- 프로젝트 개요: [/Users/seochanjin/workspace/notebooklm/infra-config/README.md](/Users/seochanjin/workspace/notebooklm/infra-config/README.md)
-- 아키텍처 문서: [/Users/seochanjin/workspace/notebooklm/infra-config/docs/architecture.md](/Users/seochanjin/workspace/notebooklm/infra-config/docs/architecture.md)
+- 전체 문서는 `../infra-config/README.md` 와 `../infra-config/docs/architecture.md` 에서 확인할 수 있습니다.
