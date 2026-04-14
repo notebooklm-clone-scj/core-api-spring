@@ -4,6 +4,8 @@ import core_api.domain.chat.dto.AiChatRequest;
 import core_api.domain.chat.dto.AiChatResponse;
 import core_api.domain.notebook.Notebook;
 import core_api.domain.notebook.NotebookRepository;
+import core_api.domain.user.Role;
+import core_api.domain.user.User;
 import core_api.global.exception.CustomException;
 import core_api.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +22,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 public class ChatServiceTest {
@@ -47,7 +56,7 @@ public class ChatServiceTest {
     void chatWithNotebook_savesReferences() throws Exception {
         // given: 노트북, 이전 대화, AI 응답 mock 준비
         Long notebookId = 1L;
-        Notebook notebook = Notebook.builder().title("테스트 노트북").build();
+        Notebook notebook = createNotebook("테스트 노트북");
         AiChatRequest request = new AiChatRequest("이 문서의 핵심 내용을 알려줘");
 
         ChatHistory oldUser = ChatHistory.builder()
@@ -138,7 +147,7 @@ public class ChatServiceTest {
     @DisplayName("채팅 이력 조회 시 AI 답변의 references도 함께 반환한다")
     void getChatHistory_includesReferences() {
         // given: reference가 포함된 AI 채팅 이력 준비
-        Notebook notebook = Notebook.builder().title("테스트").build();
+        Notebook notebook = createNotebook("테스트");
 
         ChatHistory aiChat = ChatHistory.builder()
                 .notebook(notebook)
@@ -167,9 +176,166 @@ public class ChatServiceTest {
         assertThat(result.get(0).getReferences().get(0).getContent()).isEqualTo("근거 문장");
     }
 
+    @Test
+    @DisplayName("채팅 요청 시 USER와 AI 대화가 모두 저장된다")
+    void chatWithNotebook_savesUserAndAiHistories() throws Exception {
+        // given
+        Long notebookId = 1L;
+        Notebook notebook = createNotebook("저장 테스트");
+        AiChatRequest request = new AiChatRequest("질문 내용");
+
+        AiChatResponse response = new AiChatResponse();
+        setField(response, "answer", "AI 답변");
+        setField(response, "reference_chunks", List.of());
+
+        given(notebookRepository.findById(notebookId)).willReturn(Optional.of(notebook));
+        given(chatMemoryRepository.findByNotebookId(notebookId)).willReturn(Optional.empty());
+        given(chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId)).willReturn(new ArrayList<>());
+        given(chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId)).willReturn(List.of());
+        doReturn(response).when(aiWorkerClient)
+                .askQuestionWithHistory(eq(notebookId), eq("질문 내용"), isNull(), anyList());
+        given(chatHistoryRepository.save(any(ChatHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        chatService.chatWithNotebook(notebookId, request);
+
+        // then
+        ArgumentCaptor<ChatHistory> historyCaptor = ArgumentCaptor.forClass(ChatHistory.class);
+        then(chatHistoryRepository).should(times(2)).save(historyCaptor.capture());
+
+        List<ChatHistory> savedHistories = historyCaptor.getAllValues();
+        assertThat(savedHistories).hasSize(2);
+        assertThat(savedHistories.get(0).getRole()).isEqualTo("USER");
+        assertThat(savedHistories.get(0).getMessage()).isEqualTo("질문 내용");
+        assertThat(savedHistories.get(1).getRole()).isEqualTo("AI");
+        assertThat(savedHistories.get(1).getMessage()).isEqualTo("AI 답변");
+    }
+
+    @Test
+    @DisplayName("요약 대상 대화가 충분히 쌓이면 ChatMemory를 새로 저장한다")
+    void chatWithNotebook_createsChatMemoryWhenThresholdReached() throws Exception {
+        // given
+        Long notebookId = 1L;
+        Notebook notebook = createNotebook("메모리 테스트");
+        AiChatRequest request = new AiChatRequest("새 질문");
+
+        AiChatResponse response = new AiChatResponse();
+        setField(response, "answer", "새 답변");
+        setField(response, "reference_chunks", List.of());
+
+        List<ChatHistory> recentHistory = List.of(
+                historyWithId(notebook, 6L, "AI", "답변3"),
+                historyWithId(notebook, 5L, "USER", "질문3"),
+                historyWithId(notebook, 4L, "AI", "답변2"),
+                historyWithId(notebook, 3L, "USER", "질문2"),
+                historyWithId(notebook, 2L, "AI", "답변1"),
+                historyWithId(notebook, 1L, "USER", "질문1")
+        );
+
+        List<ChatHistory> allHistories = List.of(
+                historyWithId(notebook, 1L, "USER", "질문1"),
+                historyWithId(notebook, 2L, "AI", "답변1"),
+                historyWithId(notebook, 3L, "USER", "질문2"),
+                historyWithId(notebook, 4L, "AI", "답변2"),
+                historyWithId(notebook, 5L, "USER", "질문3"),
+                historyWithId(notebook, 6L, "AI", "답변3"),
+                historyWithId(notebook, 7L, "USER", "질문4"),
+                historyWithId(notebook, 8L, "AI", "답변4"),
+                historyWithId(notebook, 9L, "USER", "질문5"),
+                historyWithId(notebook, 10L, "AI", "답변5"),
+                historyWithId(notebook, 11L, "USER", "질문6"),
+                historyWithId(notebook, 12L, "AI", "답변6")
+        );
+
+        ChatHistory savedAiChat = historyWithId(notebook, 13L, "AI", "새 답변");
+
+        given(notebookRepository.findById(notebookId)).willReturn(Optional.of(notebook));
+        given(chatMemoryRepository.findByNotebookId(notebookId)).willReturn(Optional.empty());
+        given(chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId)).willReturn(new ArrayList<>(recentHistory));
+        given(chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId)).willReturn(allHistories);
+        doReturn(response).when(aiWorkerClient)
+                .askQuestionWithHistory(eq(notebookId), eq("새 질문"), isNull(), anyList());
+        doReturn("압축 요약").when(aiWorkerClient)
+                .summarizeConversation(eq(notebookId), isNull(), anyList());
+        given(chatHistoryRepository.save(any(ChatHistory.class)))
+                .willAnswer(invocation -> {
+                    ChatHistory chatHistory = invocation.getArgument(0);
+                    if ("AI".equals(chatHistory.getRole())) {
+                        return savedAiChat;
+                    }
+                    return chatHistory;
+                });
+
+        // when
+        chatService.chatWithNotebook(notebookId, request);
+
+        // then
+        ArgumentCaptor<ChatMemory> chatMemoryCaptor = ArgumentCaptor.forClass(ChatMemory.class);
+        then(chatMemoryRepository).should().save(chatMemoryCaptor.capture());
+
+        ChatMemory savedMemory = chatMemoryCaptor.getValue();
+        assertThat(savedMemory.getSummary()).isEqualTo("압축 요약");
+        assertThat(savedMemory.getLastSummarizedChatHistoryId()).isEqualTo(6L);
+    }
+
+    @Test
+    @DisplayName("AI Worker 장애가 발생하면 채팅 저장 없이 예외를 그대로 전달한다")
+    void chatWithNotebook_fail_aiWorkerError() {
+        // given
+        Long notebookId = 1L;
+        Notebook notebook = createNotebook("장애 테스트");
+
+        given(notebookRepository.findById(notebookId)).willReturn(Optional.of(notebook));
+        given(chatMemoryRepository.findByNotebookId(notebookId)).willReturn(Optional.empty());
+        given(chatHistoryRepository.findTop6ByNotebookIdOrderByCreatedAtDesc(notebookId)).willReturn(new ArrayList<>());
+        doThrow(new CustomException(ErrorCode.AI_WORKER_ERROR)).when(aiWorkerClient)
+                .askQuestionWithHistory(eq(notebookId), eq("질문"), isNull(), anyList());
+
+        // when / then
+        assertThatThrownBy(() -> chatService.chatWithNotebook(notebookId, new AiChatRequest("질문")))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.AI_WORKER_ERROR);
+
+        then(chatHistoryRepository).should(never()).save(any(ChatHistory.class));
+        then(chatReferenceRepository).should(never()).saveAll(anyList());
+    }
+
     private void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
+    }
+
+    private Notebook createNotebook(String title) {
+        User user = User.builder()
+                .email("test@test.com")
+                .password("password123!")
+                .nickname("테스터")
+                .role(Role.USER)
+                .build();
+
+        Notebook notebook = Notebook.builder()
+                .title(title)
+                .user(user)
+                .build();
+
+        try {
+            setField(notebook, "id", 1L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return notebook;
+    }
+
+    private ChatHistory historyWithId(Notebook notebook, Long id, String role, String message) throws Exception {
+        ChatHistory chatHistory = ChatHistory.builder()
+                .notebook(notebook)
+                .role(role)
+                .message(message)
+                .build();
+        setField(chatHistory, "id", id);
+        return chatHistory;
     }
 }
