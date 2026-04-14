@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -72,6 +73,7 @@ public class UserServiceTest {
                 .email("test@gmail.com")
                 .password("password123!")
                 .nickname("테스터")
+                .role(Role.USER)
                 .build();
 
         given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(fakeUser));
@@ -83,6 +85,7 @@ public class UserServiceTest {
         //then
         assertThat(response.getToken()).isEqualTo("fake-access-token");
         assertThat(response.getRefreshToken()).isEqualTo("fake-refresh-token");
+        assertThat(response.getRole()).isEqualTo(Role.USER);
     }
 
     @Test
@@ -95,6 +98,7 @@ public class UserServiceTest {
                 .password("password123!")
                 .nickname("테스터")
                 .build();
+        setField(fakeUser, "role", null);
 
         given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(fakeUser));
         //when
@@ -106,12 +110,43 @@ public class UserServiceTest {
     }
 
     @Test
+    @DisplayName("로그인 사용자 role이 없으면 예외 발생")
+    void login_fail_when_role_missing() {
+        // given
+        UserLoginRequest request = new UserLoginRequest("test@gmail.com", "password123!");
+        User fakeUser = User.builder()
+                .email("test@gmail.com")
+                .password("password123!")
+                .nickname("테스터")
+                .build();
+        setField(fakeUser, "role", null);
+
+        given(userRepository.findByEmail(request.getEmail())).willReturn(Optional.of(fakeUser));
+
+        // when / then
+        CustomException exception = catchThrowableOfType(
+                () -> userService.login(request),
+                CustomException.class
+        );
+
+        assertThat(exception).isNotNull();
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_ROLE_MISSING);
+    }
+
+    @Test
     @DisplayName("리프레시 토큰 재발급 시 access token과 refresh token이 새로 발급된다")
     void refresh_success() {
         // given
         UserTokenRefreshRequest request = new UserTokenRefreshRequest("old-refresh-token");
+        User user = User.builder()
+                .email("test@gmail.com")
+                .password("password123!")
+                .nickname("테스터")
+                .role(Role.USER)
+                .build();
 
         given(jwtProvider.extractRefreshTokenUserId("old-refresh-token")).willReturn(1L);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(jwtProvider.createAccessToken(1L)).willReturn("new-access-token");
         given(jwtProvider.createRefreshToken(1L)).willReturn("new-refresh-token");
 
@@ -123,6 +158,7 @@ public class UserServiceTest {
         verify(refreshTokenService).saveRefreshToken(1L, "new-refresh-token");
         assertThat(response.getToken()).isEqualTo("new-access-token");
         assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+        assertThat(response.getRole()).isEqualTo(Role.USER);
     }
 
     @Test
@@ -139,5 +175,13 @@ public class UserServiceTest {
         assertThat(response.getMessage()).isEqualTo("로그아웃이 완료되었습니다.");
     }
 
-
+    private void setField(Object target, String fieldName, Object value) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

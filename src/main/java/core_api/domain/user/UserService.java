@@ -55,7 +55,7 @@ public class UserService {
         refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
 
         // token 필드는 프론트 하위 호환을 위해 access token을 그대로 유지합니다.
-        return new UserLoginResponse(accessToken, refreshToken);
+        return new UserLoginResponse(accessToken, refreshToken, resolveRole(user));
     }
 
     @Transactional(readOnly = true)
@@ -63,12 +63,14 @@ public class UserService {
         try {
             Long userId = jwtProvider.extractRefreshTokenUserId(request.getRefreshToken());
             refreshTokenService.validateRefreshToken(userId, request.getRefreshToken());
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
             String newAccessToken = jwtProvider.createAccessToken(userId);
             String newRefreshToken = jwtProvider.createRefreshToken(userId);
             refreshTokenService.saveRefreshToken(userId, newRefreshToken);
 
-            return new UserLoginResponse(newAccessToken, newRefreshToken);
+            return new UserLoginResponse(newAccessToken, newRefreshToken, resolveRole(user));
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
@@ -80,5 +82,12 @@ public class UserService {
         // 더 이상 access token 재발급이 되지 않도록 막는 방식으로 처리합니다.
         refreshTokenService.deleteRefreshToken(userId);
         return new UserLogoutResponse("로그아웃이 완료되었습니다.");
+    }
+
+    private Role resolveRole(User user) {
+        if (user.getRole() == null) {
+            throw new CustomException(ErrorCode.USER_ROLE_MISSING);
+        }
+        return user.getRole();
     }
 }

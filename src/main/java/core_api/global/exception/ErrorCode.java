@@ -17,6 +17,7 @@ public enum ErrorCode {
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "U006", "관리자만 접근할 수 있습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "U007", "유효하지 않은 리프레시 토큰입니다."),
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "U008", "저장된 리프레시 토큰이 없습니다."),
+    USER_ROLE_MISSING(HttpStatus.INTERNAL_SERVER_ERROR, "U009", "사용자 권한 정보가 존재하지 않습니다."),
 
     // Notebook 관련 에러
     NOTEBOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "N001", "해당 노트북을 찾을 수 없습니다."),
