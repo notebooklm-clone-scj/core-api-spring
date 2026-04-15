@@ -47,6 +47,10 @@ public class Notebook {
         this.user = user;
     }
 
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
     @OneToMany(mappedBy = "notebook", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> documents = new ArrayList<>();
 
