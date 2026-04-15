@@ -24,12 +24,12 @@ public class DocumentAsyncWorker {
     // 외부 API 호출 동안 DB 커넥션을 붙잡지 않기 위해 @Transactional은 메서드에 두지 않았다
     // 대신 필요한 순간에만 DB를 짧게 읽고 저장
     @Async("documentTaskExecutor") // 비동기 실행
-    public void analyzeDocumentInBackground(Long documentId, byte[] fileBytes, String filename) {
+    public void analyzeDocumentInBackground(Long documentId, Long notebookId, byte[] fileBytes, String filename) {
         log.info("비동기 분석 시작: {}", filename);
 
         try{
             // documentId를 같이 넘겨 PDF 요약 호출 실패 시에도 "어느 문서에서 실패했는지" 운영 로그에 남길 수 있게 한다.
-            AiSummaryResponse aiResponse = aiWorkerClient.extractPdfSummary(documentId, fileBytes, filename);
+            AiSummaryResponse aiResponse = aiWorkerClient.extractPdfSummary(notebookId, documentId, fileBytes, filename);
 
             // DB에서 저장했던 문서를 다시 찾음, DB 업데이트 로직 (이 순간에만 짧게 DB 사용)
             Document document = documentRepository.findById(documentId)

@@ -6,4 +6,10 @@ import java.util.List;
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findAllByNotebookId(Long notebookId);
+
+    long countByNotebookId(Long notebookId);
+
+    long countByNotebookUserId(Long userId);
+
+    java.util.Optional<Document> findByIdAndNotebookId(Long documentId, Long notebookId);
 }

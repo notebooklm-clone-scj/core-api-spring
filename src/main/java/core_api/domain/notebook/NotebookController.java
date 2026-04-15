@@ -6,6 +6,7 @@ import core_api.domain.document.dto.AiSummaryResponse;
 import core_api.domain.document.dto.DocumentResponse;
 import core_api.domain.notebook.dto.NotebookCreateRequest;
 import core_api.domain.notebook.dto.NotebookResponse;
+import core_api.domain.notebook.dto.NotebookUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,5 +34,22 @@ public class NotebookController {
     public ResponseEntity<List<NotebookResponse>> getNotebooks(@PathVariable Long userId) {
         List<NotebookResponse> responses = notebookService.getNotebooks(userId);
         return ResponseEntity.ok(responses);
+    }
+
+    // 노트북 제목 변경
+    @PatchMapping("/{notebookId}")
+    public ResponseEntity<String> updateNotebookTitle(
+            @PathVariable Long notebookId,
+            @Valid @RequestBody NotebookUpdateRequest request
+    ) {
+        notebookService.updateNotebookTitle(notebookId, request);
+        return ResponseEntity.ok("노트북 제목이 변경되었습니다.");
+    }
+
+    // 노트북 삭제
+    @DeleteMapping("/{notebookId}")
+    public ResponseEntity<String> deleteNotebook(@PathVariable Long notebookId) {
+        notebookService.deleteNotebook(notebookId);
+        return ResponseEntity.ok("노트북이 삭제되었습니다.");
     }
 }

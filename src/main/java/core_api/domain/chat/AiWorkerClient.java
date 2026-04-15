@@ -68,7 +68,7 @@ public class AiWorkerClient {
     }
 
     // PDF 업로드 분석 호출 -> 어떤 문서(documentId)를 분석했는지 남겨야 운영 중 실패 원인을 추적 가능
-    public AiSummaryResponse extractPdfSummary(Long documentId, byte[] fileBytes, String filename) throws IOException {
+    public AiSummaryResponse extractPdfSummary(Long notebookId, Long documentId, byte[] fileBytes, String filename) throws IOException {
         String url = aiWorkerUrl + "/api/v1/pdf/extract";
 
         // Spring 로그, FastAPI 로그, DB 요약 로그를 하나의 요청으로 묶는 식별자
@@ -93,6 +93,8 @@ public class AiWorkerClient {
             };
 
             body.add("file", fileResource); // 파이썬의 file: UploadFile 파라미터 이름과 일치
+            body.add("notebook_id", notebookId.toString());
+            body.add("document_id", documentId.toString());
 
             // 헤더 + 바디를 하나의 HTTP 요청 객체로 묶는다.
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
@@ -106,7 +108,7 @@ public class AiWorkerClient {
 
             if (response.getBody() == null) {
                 long latencyMs = elapsedSince(startTime);
-                recordFailure(AiRequestType.PDF_SUMMARY, requestId, null, documentId, latencyMs,
+                recordFailure(AiRequestType.PDF_SUMMARY, requestId, notebookId, documentId, latencyMs,
                         ErrorCode.AI_RESPONSE_EMPTY, "Empty body from pdf extract");
                 throw new CustomException(ErrorCode.AI_RESPONSE_EMPTY);
             }
@@ -118,16 +120,17 @@ public class AiWorkerClient {
             aiCallLogService.recordSuccess(
                     AiRequestType.PDF_SUMMARY,
                     requestId,
-                    null,
+                    notebookId,
                     documentId,
                     latencyMs,
                     null
             );
 
             // 상세 분석은 DB보다 애플리케이션 로그가 더 적합하므로 info 로그도 같이 남긴다.
-            log.info("event=ai_call_success requestId={} requestType={} documentId={} latencyMs={} url={} totalPages={} chunksSaved={}",
+            log.info("event=ai_call_success requestId={} requestType={} notebookId={} documentId={} latencyMs={} url={} totalPages={} chunksSaved={}",
                     requestId,
                     AiRequestType.PDF_SUMMARY,
+                    notebookId,
                     documentId,
                     latencyMs,
                     url,
@@ -142,8 +145,36 @@ public class AiWorkerClient {
 
             // 단순 통신 실패인지, timeout인지 구분해서 에러 코드를 더 정확하게 만든다.
             ErrorCode errorCode = resolveAiErrorCode(e);
-            recordFailure(AiRequestType.PDF_SUMMARY, requestId, null, documentId, latencyMs, errorCode, e.getMessage());
+            recordFailure(AiRequestType.PDF_SUMMARY, requestId, notebookId, documentId, latencyMs, errorCode, e.getMessage());
             throw new CustomException(errorCode);
+        }
+    }
+
+    // 문서 삭제 시 벡터 DB에 남아 있는 chunk도 함께 정리한다.
+    public void deleteDocumentVectors(Long documentId, String filename) {
+        String endpoint = aiWorkerUrl + "/api/v1/vector/documents/" + documentId;
+        String requestId = generateRequestId();
+
+        try {
+            HttpHeaders headers = createHeaders(MediaType.APPLICATION_JSON, requestId);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("filename", filename);
+
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            restTemplate.exchange(endpoint, org.springframework.http.HttpMethod.DELETE, requestEntity, Void.class);
+
+            log.info("event=vector_delete_success requestId={} documentId={} filename={}",
+                    requestId,
+                    documentId,
+                    filename);
+        } catch (RestClientException e) {
+            log.error("event=vector_delete_failure requestId={} documentId={} filename={} message={}",
+                    requestId,
+                    documentId,
+                    filename,
+                    sanitizeMessage(e.getMessage()));
+            throw new CustomException(resolveAiErrorCode(e));
         }
     }
 

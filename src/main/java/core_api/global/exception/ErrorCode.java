@@ -21,12 +21,15 @@ public enum ErrorCode {
 
     // Notebook 관련 에러
     NOTEBOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "N001", "해당 노트북을 찾을 수 없습니다."),
+    NOTEBOOK_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "N002", "계정당 노트북은 최대 2개까지 생성할 수 있습니다."),
 
     // PDF 관련 에러
     PDF_EXTRACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P001", "PDF 텍스트 추출에 실패했습니다."),
 
     // 문서 관련 에러
     DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "해당 문서를 찾을 수 없습니다."),
+    DOCUMENT_LIMIT_PER_NOTEBOOK_EXCEEDED(HttpStatus.BAD_REQUEST, "D002", "노트북당 문서는 최대 3개까지 등록할 수 있습니다."),
+    DOCUMENT_LIMIT_PER_USER_EXCEEDED(HttpStatus.BAD_REQUEST, "D003", "계정당 문서는 최대 5개까지 등록할 수 있습니다."),
 
     // 파일 관련 에러
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일을 읽는 중 에러가 발생했습니다."),

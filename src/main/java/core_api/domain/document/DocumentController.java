@@ -36,4 +36,14 @@ public class DocumentController {
         List<DocumentResponse> responses = documentService.getDocumentsByNotebook(notebookId);
         return ResponseEntity.ok(responses);
     }
+
+    // 노트북 내 문서 삭제
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<String> deleteDocument(
+            @PathVariable("notebookId") Long notebookId,
+            @PathVariable("documentId") Long documentId
+    ) {
+        documentService.deleteDocument(notebookId, documentId);
+        return ResponseEntity.ok("문서가 삭제되었습니다.");
+    }
 }
