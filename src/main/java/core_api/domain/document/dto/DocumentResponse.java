@@ -1,6 +1,7 @@
 package core_api.domain.document.dto;
 
 import core_api.domain.document.Document;
+import core_api.domain.document.DocumentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class DocumentResponse {
     private String filename;
     private String summary;
     private int totalPages;
+    private DocumentStatus status;
     private LocalDateTime createdAt;
 
     // 엔티티를 DTO로 변경
@@ -24,6 +26,7 @@ public class DocumentResponse {
                 .filename(document.getFilename())
                 .summary(document.getSummary())
                 .totalPages(document.getTotalPages())
+                .status(document.getStatus())
                 .createdAt(document.getCreatedAt())
                 .build();
     }
