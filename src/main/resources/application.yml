@@ -18,8 +18,8 @@ spring:
   # 3. Redis ?? ?? ?? ??
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
 jwt:
   # 이 키는 외부로 유출되면 안 됩니다! (최소 32바이트 이상 길이의 임의 문자열)
@@ -29,7 +29,11 @@ jwt:
 
 
 ai-worker:
-  url: http://localhost:8000
+  url: ${AI_WORKER_URL:http://localhost:8000}
   connect-timeout-ms: 3000
   read-timeout-ms: 180000
   chat-retry-count: 1
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
