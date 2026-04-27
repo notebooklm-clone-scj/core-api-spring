@@ -7,7 +7,9 @@ import java.util.List;
 
 public interface NotebookRepository extends JpaRepository<Notebook, Long> {
 
-    List<Notebook> findAllByUser(User user);
+    List<Notebook> findAllByUserId(Long userId);
 
     long countByUserId(Long userId);
+
+    java.util.Optional<Notebook> findByIdAndUserId(Long notebookId, Long userId);
 }

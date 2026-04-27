@@ -89,14 +89,14 @@ class SecurityConfigTest {
     @Test
     @DisplayName("일반 API는 인증이 없으면 401을 반환한다")
     void protectedEndpoint_requiresAuthentication() throws Exception {
-        mockMvc.perform(get("/api/v1/notebooks/user/1"))
+        mockMvc.perform(get("/api/v1/notebooks"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("CORS preflight 요청은 인증 없이 허용된다")
     void preflightRequest_isPermitted() throws Exception {
-        mockMvc.perform(options("/api/v1/notebooks/user/1")
+        mockMvc.perform(options("/api/v1/notebooks")
                         .header("Origin", "http://localhost:3000")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
