@@ -2,9 +2,9 @@ spring:
   # 1. PostgreSQL ?????? ?? ?? (?? ??? ?? ?? ???!)
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/notebooklm_db
-    username: chanjin
-    password: chanjinpassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/notebooklm_db}
+    username: ${SPRING_DATASOURCE_USERNAME:chanjin}
+    password: ${SPRING_DATASOURCE_PASSWORD}
 
   # 2. JPA (?????? ORM) ??
   jpa:
@@ -23,7 +23,7 @@ spring:
 
 jwt:
   # 이 키는 외부로 유출되면 안 됩니다! (최소 32바이트 이상 길이의 임의 문자열)
-  secret: notebooklm-clone-project-chanjin-secret-key-very-long-string
+  secret: ${JWT_SECRET}
   access-expiration: 1200000 # 20분
   refresh-expiration: 604800000 # 7일
 
