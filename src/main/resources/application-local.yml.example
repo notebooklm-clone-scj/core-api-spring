@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    password: your-local-db-password
+
+jwt:
+  secret: replace-with-a-32-byte-or-longer-local-secret-key

@@ -36,9 +36,9 @@ public class NotebookServiceTest {
     void createNotebook_success() {
         //given
         Long userId = 1L;
-        NotebookCreateRequest request = new NotebookCreateRequest(userId, "첫번째");
+        NotebookCreateRequest request = new NotebookCreateRequest("첫번째");
 
-        User fakeUser = User.builder().email("test@gmail.com").nickname("찬진").build();
+        User fakeUser = User.builder().email("test@gmail.com").nickname("찬진").role(core_api.domain.user.Role.USER).build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(fakeUser));
 
@@ -49,7 +49,7 @@ public class NotebookServiceTest {
         given(notebookRepository.save(any(Notebook.class))).willReturn(fakeSavedNotebook);
 
         //when
-        notebookService.createNotebook(request);
+        notebookService.createNotebook(userId, request);
         //then
 
     }
@@ -59,13 +59,12 @@ public class NotebookServiceTest {
     void getNotebooks_success() {
         //given
         Long userId = 1L;
-        User fakeUser = User.builder().email("test@gmail.com").build();
+        User fakeUser = User.builder().email("test@gmail.com").role(core_api.domain.user.Role.USER).build();
 
         Notebook notebook1 = Notebook.builder().title("프로젝트 A").user(fakeUser).build();
         Notebook notebook2 = Notebook.builder().title("프로젝트 B").user(fakeUser).build();
 
-        given(userRepository.findById(userId)).willReturn(Optional.of(fakeUser));
-        given(notebookRepository.findAllByUser(fakeUser)).willReturn(List.of(notebook1, notebook2));
+        given(notebookRepository.findAllByUserId(userId)).willReturn(List.of(notebook1, notebook2));
 
         //when
         List<NotebookResponse> responses = notebookService.getNotebooks(userId);
@@ -79,15 +78,42 @@ public class NotebookServiceTest {
     @DisplayName("존재하지 않는 유저로 노트북을 만들려 하면 에러 발생")
     void createNotebook_fail_userNotFound() {
         // given
-        NotebookCreateRequest request = new NotebookCreateRequest(999L, "유령 프로젝트");
+        NotebookCreateRequest request = new NotebookCreateRequest("유령 프로젝트");
 
         given(userRepository.findById(999L)).willReturn(Optional.empty());
 
         // when
         // then
-        assertThatThrownBy(() -> notebookService.createNotebook(request))
+        assertThatThrownBy(() -> notebookService.createNotebook(999L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("내 소유가 아닌 노트북은 제목을 변경할 수 없다")
+    void updateNotebookTitle_fail_notOwnedNotebook() {
+        given(notebookRepository.findByIdAndUserId(10L, 1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notebookService.updateNotebookTitle(1L, 10L, createNotebookUpdateRequest("새 제목")))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.NOTEBOOK_NOT_FOUND);
+    }
+
+    private core_api.domain.notebook.dto.NotebookUpdateRequest createNotebookUpdateRequest(String title) {
+        core_api.domain.notebook.dto.NotebookUpdateRequest request =
+                new core_api.domain.notebook.dto.NotebookUpdateRequest();
+
+        try {
+            java.lang.reflect.Field titleField =
+                    core_api.domain.notebook.dto.NotebookUpdateRequest.class.getDeclaredField("title");
+            titleField.setAccessible(true);
+            titleField.set(request, title);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
+        return request;
     }
 }

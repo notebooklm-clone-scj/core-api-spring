@@ -33,10 +33,8 @@ public class DocumentService {
 
     // 사용자 요청을 받고 즉시 응답 (비동기 입구)
     @Transactional
-    public Long uploadAndSummarizeDocumentAsync(Long notebookId, MultipartFile file) {
-        // 노트북 존재 확인
-        Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(()->new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
+    public Long uploadAndSummarizeDocumentAsync(Long userId, Long notebookId, MultipartFile file) {
+        Notebook notebook = getOwnedNotebook(userId, notebookId);
 
         validateDocumentUploadLimit(notebook);
 
@@ -79,11 +77,8 @@ public class DocumentService {
 
 
     @Transactional(readOnly = true)
-    public List<DocumentResponse> getDocumentsByNotebook(Long notebookId) {
-        // 노트북이 있는지 확인
-        if (!notebookRepository.existsById(notebookId)) {
-            throw new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND);
-        }
+    public List<DocumentResponse> getDocumentsByNotebook(Long userId, Long notebookId) {
+        getOwnedNotebook(userId, notebookId);
 
         // 해당 노트북의 문서를 조회
         List<Document> documents = documentRepository.findAllByNotebookId(notebookId);
@@ -95,7 +90,9 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteDocument(Long notebookId, Long documentId) {
+    public void deleteDocument(Long userId, Long notebookId, Long documentId) {
+        getOwnedNotebook(userId, notebookId);
+
         Document document = documentRepository.findByIdAndNotebookId(documentId, notebookId)
                 .orElseThrow(() -> new CustomException(ErrorCode.DOCUMENT_NOT_FOUND));
 
@@ -113,6 +110,11 @@ public class DocumentService {
         if (userDocumentCount >= MAX_DOCUMENTS_PER_USER) {
             throw new CustomException(ErrorCode.DOCUMENT_LIMIT_PER_USER_EXCEEDED);
         }
+    }
+
+    private Notebook getOwnedNotebook(Long userId, Long notebookId) {
+        return notebookRepository.findByIdAndUserId(notebookId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
     }
 
 }

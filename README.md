@@ -38,7 +38,21 @@
 
 ```bash
 cd /Users/seochanjin/workspace/notebooklm/core-api-spring
-./gradlew bootRun
+cp src/main/resources/application-local.yml.example src/main/resources/application-local.yml
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+```
+
+`application-local.yml`에는 Git에 올리면 안 되는 로컬 비밀값만 넣습니다.
+
+예시:
+
+```yaml
+spring:
+  datasource:
+    password: your-local-db-password
+
+jwt:
+  secret: replace-with-a-32-byte-or-longer-local-secret-key
 ```
 
 테스트:

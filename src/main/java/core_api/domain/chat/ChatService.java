@@ -30,10 +30,8 @@ public class ChatService {
     private final ChatMemoryRepository chatMemoryRepository;
 
     @Transactional
-    public AiChatResponse chatWithNotebook(Long notebookId, AiChatRequest request) {
-        // 노트북 존재 유무 확인
-        Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
+    public AiChatResponse chatWithNotebook(Long userId, Long notebookId, AiChatRequest request) {
+        Notebook notebook = getOwnedNotebook(userId, notebookId);
 
         // 기존 summary memory가 있으면 같이 꺼내 오래된 대화 요약 + 최근 대화 구조로 AI에게 전달
         ChatMemory chatMemory = chatMemoryRepository.findByNotebookId(notebookId).orElse(null);
@@ -80,11 +78,18 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatHistoryResponse> getChatHistory(Long notebookId) {
+    public List<ChatHistoryResponse> getChatHistory(Long userId, Long notebookId) {
+        getOwnedNotebook(userId, notebookId);
+
         List<ChatHistory> histories = chatHistoryRepository.findAllByNotebookIdOrderByCreatedAtAsc(notebookId);
         return histories.stream()
                 .map(ChatHistoryResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    private Notebook getOwnedNotebook(Long userId, Long notebookId) {
+        return notebookRepository.findByIdAndUserId(notebookId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
     }
 
     private void saveReferences(ChatHistory savedAiChat, List<AiChatResponse.ReferenceChunk> referenceChunks) {

@@ -35,8 +35,8 @@ public class NotebookService {
     private final AiWorkerClient aiWorkerClient;
 
     @Transactional
-    public Long createNotebook(NotebookCreateRequest request) {
-        User user = userRepository.findById(request.getUserId())
+    public Long createNotebook(Long userId, NotebookCreateRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         long notebookCount = notebookRepository.countByUserId(user.getId());
@@ -55,26 +55,21 @@ public class NotebookService {
 
     @Transactional(readOnly = true)
     public List<NotebookResponse> getNotebooks(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        return notebookRepository.findAllByUser(user).stream()
+        return notebookRepository.findAllByUserId(userId).stream()
                 .map(NotebookResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void updateNotebookTitle(Long notebookId, NotebookUpdateRequest request) {
-        Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
+    public void updateNotebookTitle(Long userId, Long notebookId, NotebookUpdateRequest request) {
+        Notebook notebook = getOwnedNotebook(userId, notebookId);
 
         notebook.updateTitle(request.getTitle().trim());
     }
 
     @Transactional
-    public void deleteNotebook(Long notebookId) {
-        Notebook notebook = notebookRepository.findById(notebookId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
+    public void deleteNotebook(Long userId, Long notebookId) {
+        Notebook notebook = getOwnedNotebook(userId, notebookId);
 
         List<Document> documents = documentRepository.findAllByNotebookId(notebookId);
 
@@ -99,6 +94,11 @@ public class NotebookService {
         }
 
         notebookRepository.delete(notebook);
+    }
+
+    private Notebook getOwnedNotebook(Long userId, Long notebookId) {
+        return notebookRepository.findByIdAndUserId(notebookId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTEBOOK_NOT_FOUND));
     }
 
 }
