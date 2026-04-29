@@ -30,9 +30,36 @@
 - 문서 비동기 분석 시작점
 - 최근 대화 윈도우 기반 AI 요청
 - 대화 요약 메모리 저장
-- AI 답변 레퍼런스 저장 및 재조회
+- AI 답변 레퍼런스와 출처 메타데이터 저장 및 재조회
 - AI 호출 로그 저장 및 관리자 조회 API
 - validation + 공통 에러 응답 구조
+
+## RAG 연동 책임
+
+Spring은 직접 임베딩이나 LLM 생성을 수행하지 않고, 도메인 상태와 AI Worker 호출 흐름을 관리합니다.
+
+```txt
+채팅 요청
+  -> 노트북 소유권 검증
+  -> 최근 대화 + summary memory 조회
+  -> FastAPI에 notebookId, question, history 전달
+  -> answer + reference_chunks 수신
+  -> USER/AI ChatHistory 저장
+  -> ChatReference 저장
+  -> 필요 시 conversation memory 갱신
+```
+
+저장하는 reference metadata:
+
+| 필드 | 설명 |
+| --- | --- |
+| `documentId` | 근거가 나온 문서 ID |
+| `documentTitle` | 근거 문서 제목 |
+| `sectionTitle` | 근거 chunk 주변 섹션 제목 |
+| `pageNumber` | PDF 페이지 번호 |
+| `chunkIndex` | 문서 전체 기준 chunk 순서 |
+| `pageChunkIndex` | 해당 페이지 안에서의 chunk 순서 |
+| `content` | 실제 근거 chunk 본문 |
 
 ## 실행
 
@@ -60,6 +87,15 @@ jwt:
 ```bash
 ./gradlew test
 ```
+
+IntelliJ에서 직접 실행할 때는 `application-local.yml`이 자동으로 읽히지 않을 수 있습니다.
+이 경우 Run Configuration의 Active profiles에 아래 값을 넣습니다.
+
+```txt
+local
+```
+
+로그에 `No active profile set`이 보이면 local profile이 적용되지 않은 상태입니다.
 
 ## 관련 문서
 
