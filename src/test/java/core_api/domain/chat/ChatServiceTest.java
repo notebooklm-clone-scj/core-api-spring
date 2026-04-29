@@ -76,11 +76,21 @@ public class ChatServiceTest {
         setField(response, "answer", "핵심 내용은 세 가지입니다.");
 
         AiChatResponse.ReferenceChunk chunk1 = new AiChatResponse.ReferenceChunk();
+        setField(chunk1, "document_id", 10L);
+        setField(chunk1, "document_title", "테스트 문서");
+        setField(chunk1, "section_title", "핵심 요약");
         setField(chunk1, "page_number", 3);
+        setField(chunk1, "chunk_index", 4);
+        setField(chunk1, "page_chunk_index", 1);
         setField(chunk1, "content", "첫 번째 근거 문장");
 
         AiChatResponse.ReferenceChunk chunk2 = new AiChatResponse.ReferenceChunk();
+        setField(chunk2, "document_id", 10L);
+        setField(chunk2, "document_title", "테스트 문서");
+        setField(chunk2, "section_title", "세부 내용");
         setField(chunk2, "page_number", 7);
+        setField(chunk2, "chunk_index", 8);
+        setField(chunk2, "page_chunk_index", 0);
         setField(chunk2, "content", "두 번째 근거 문장");
 
         setField(response, "reference_chunks", List.of(chunk1, chunk2));
@@ -121,12 +131,22 @@ public class ChatServiceTest {
         assertThat(savedReferences).hasSize(2);
 
         assertThat(savedReferences.get(0).getChatHistory()).isEqualTo(savedAiChat);
+        assertThat(savedReferences.get(0).getDocumentId()).isEqualTo(10L);
+        assertThat(savedReferences.get(0).getDocumentTitle()).isEqualTo("테스트 문서");
+        assertThat(savedReferences.get(0).getSectionTitle()).isEqualTo("핵심 요약");
         assertThat(savedReferences.get(0).getPageNumber()).isEqualTo(3);
+        assertThat(savedReferences.get(0).getChunkIndex()).isEqualTo(4);
+        assertThat(savedReferences.get(0).getPageChunkIndex()).isEqualTo(1);
         assertThat(savedReferences.get(0).getContent()).isEqualTo("첫 번째 근거 문장");
         assertThat(savedReferences.get(0).getSortOrder()).isEqualTo(0);
 
         assertThat(savedReferences.get(1).getChatHistory()).isEqualTo(savedAiChat);
+        assertThat(savedReferences.get(1).getDocumentId()).isEqualTo(10L);
+        assertThat(savedReferences.get(1).getDocumentTitle()).isEqualTo("테스트 문서");
+        assertThat(savedReferences.get(1).getSectionTitle()).isEqualTo("세부 내용");
         assertThat(savedReferences.get(1).getPageNumber()).isEqualTo(7);
+        assertThat(savedReferences.get(1).getChunkIndex()).isEqualTo(8);
+        assertThat(savedReferences.get(1).getPageChunkIndex()).isEqualTo(0);
         assertThat(savedReferences.get(1).getContent()).isEqualTo("두 번째 근거 문장");
         assertThat(savedReferences.get(1).getSortOrder()).isEqualTo(1);
     }
@@ -157,7 +177,12 @@ public class ChatServiceTest {
                 .message("답변입니다.")
                 .references(List.of(
                         ChatReference.builder()
+                                .documentId(20L)
+                                .documentTitle("이력 문서")
+                                .sectionTitle("개요")
                                 .pageNumber(2)
+                                .chunkIndex(3)
+                                .pageChunkIndex(0)
                                 .content("근거 문장")
                                 .sortOrder(0)
                                 .build()
@@ -175,7 +200,12 @@ public class ChatServiceTest {
         // then: 응답에 reference 정보가 함께 포함된다
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getReferences()).hasSize(1);
+        assertThat(result.get(0).getReferences().get(0).getDocumentId()).isEqualTo(20L);
+        assertThat(result.get(0).getReferences().get(0).getDocumentTitle()).isEqualTo("이력 문서");
+        assertThat(result.get(0).getReferences().get(0).getSectionTitle()).isEqualTo("개요");
         assertThat(result.get(0).getReferences().get(0).getPageNumber()).isEqualTo(2);
+        assertThat(result.get(0).getReferences().get(0).getChunkIndex()).isEqualTo(3);
+        assertThat(result.get(0).getReferences().get(0).getPageChunkIndex()).isEqualTo(0);
         assertThat(result.get(0).getReferences().get(0).getContent()).isEqualTo("근거 문장");
     }
 

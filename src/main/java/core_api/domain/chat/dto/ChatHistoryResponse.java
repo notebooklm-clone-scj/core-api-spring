@@ -32,12 +32,22 @@ public class ChatHistoryResponse {
     @Getter
     @Builder
     public static class ReferenceResponse {
+        private Long documentId;
+        private String documentTitle;
+        private String sectionTitle;
         private int pageNumber;
+        private Integer chunkIndex;
+        private Integer pageChunkIndex;
         private String content;
 
         public static ReferenceResponse from(ChatReference chatReference) {
             return ReferenceResponse.builder()
+                    .documentId(chatReference.getDocumentId())
+                    .documentTitle(chatReference.getDocumentTitle())
+                    .sectionTitle(chatReference.getSectionTitle())
                     .pageNumber(chatReference.getPageNumber())
+                    .chunkIndex(chatReference.getChunkIndex())
+                    .pageChunkIndex(chatReference.getPageChunkIndex())
                     .content(chatReference.getContent())
                     .build();
         }

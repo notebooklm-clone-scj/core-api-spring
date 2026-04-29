@@ -21,8 +21,23 @@ public class ChatReference {
     @JoinColumn(name = "chat_history_id", nullable = false)
     private ChatHistory chatHistory;
 
+    @Column
+    private Long documentId;
+
+    @Column
+    private String documentTitle;
+
+    @Column
+    private String sectionTitle;
+
     @Column(nullable = false)
     private int pageNumber;
+
+    @Column
+    private Integer chunkIndex;
+
+    @Column
+    private Integer pageChunkIndex;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -30,4 +45,3 @@ public class ChatReference {
     @Column(nullable = false)
     private int sortOrder;
 }
-
