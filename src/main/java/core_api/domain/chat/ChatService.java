@@ -105,7 +105,12 @@ public class ChatService {
 
             references.add(ChatReference.builder()
                     .chatHistory(savedAiChat)
+                    .documentId(chunk.getDocument_id())
+                    .documentTitle(chunk.getDocument_title())
+                    .sectionTitle(chunk.getSection_title())
                     .pageNumber(chunk.getPage_number())
+                    .chunkIndex(chunk.getChunk_index())
+                    .pageChunkIndex(chunk.getPage_chunk_index())
                     .content(chunk.getContent())
                     .sortOrder(index)
                     .build());
