@@ -196,8 +196,9 @@ public class AiWorkerClient {
                 // JSON 요청에도 requestId를 헤더로 같이 보낸다.
                 HttpHeaders headers = createHeaders(MediaType.APPLICATION_JSON, requestId);
 
-                // FastAPI가 기대하는 JSON body 구성
+                // FastAPI가 notebook_id 기준으로 벡터 검색 범위를 제한할 수 있도록 함께 보낸다.
                 Map<String, Object> body = new HashMap<>();
+                body.put("notebook_id", notebookId);
                 body.put("question", question);
                 body.put("conversation_summary", conversationSummary);
                 body.put("history", formatHistory(historyList));
